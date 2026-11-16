@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>BKR Robot App</title>
+<title>BKR Robot</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -68,80 +68,150 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
 @media (max-height:520px){.hint{display:none}.cap p{font-size:14px;padding:6px 12px}}
 @media (prefers-reduced-motion:reduce){.rb.mic.live{animation:none}.sheet{transition:none}}
 </style>
+<style>
+/* ---- v2 additions: real robot link, AI, voice, remote ---- */
+.top{pointer-events:auto}
+.chip.btnchip{cursor:pointer;pointer-events:auto}
+.dot.mid{background:var(--mustard)}
+.chip[hidden]{display:none}
+.field textarea{font-family:var(--body);font-size:14px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--ink);color:var(--cream);min-height:60px}
+.field .hint2{font-size:12px;color:var(--muted)}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inline input{flex:1;min-width:120px}
+.res{font-family:var(--mono);font-size:12px;color:var(--cream);background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px;white-space:pre-wrap;word-break:break-word;max-height:160px;overflow:auto}
+.warn{color:#FFB08A}
+.okc{color:#8FD694}
+.code{font-family:var(--mono);font-size:22px;letter-spacing:4px;color:var(--mustard)}
+video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;left:0;top:0}
+.cap p.sys{background:rgba(194,102,45,.18);border-color:rgba(194,102,45,.6);font-size:13px}
+</style>
 </head>
 <body>
 <canvas id="face" aria-label="BKR robot face. Tap, hold or swipe to change his expression." role="img"></canvas>
+<video id="camv" playsinline muted autoplay></video>
 
 <div class="top">
   <span class="logo">BKR</span>
-  <span class="chip"><span class="dot" id="bleDot"></span><span id="bleTxt">Robot body · not connected</span></span>
+  <span class="chip btnchip" id="bleChip" role="button" tabindex="0" aria-label="Connect the robot body"><span class="dot" id="bleDot"></span><span id="bleTxt">Robot body · tap to connect</span></span>
+  <span class="chip btnchip" id="langChip" role="button" tabindex="0" aria-label="Switch listening language">EN</span>
+  <span class="chip" id="remChip" hidden><span class="dot" id="remDot"></span><span id="remTxt">Remote</span></span>
   <span class="spacer"></span>
   <span class="chip" id="moodChip">mood · neutral</span>
 </div>
-<div class="cmd" id="cmd">→ ESP32: COME</div>
+<div class="cmd" id="cmd">→ ESP32</div>
 
 <div class="cap" id="cap" aria-live="polite"></div>
 
 <div class="bar">
-  <button class="rb" id="demoBtn" aria-label="Open demo panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="16" r="3"/></svg></button>
+  <button class="rb" id="demoBtn" aria-label="Open test panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="16" r="3"/></svg></button>
   <button class="rb mic" id="micBtn" aria-label="Talk to BKR"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
   <button class="rb" id="setBtn" aria-label="Open settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
 </div>
-<div class="hint" id="hint">tap · hold · swipe · or say "Hey BKR"</div>
+<div class="hint" id="hint">tap the mic and talk · tap · hold · swipe the face</div>
 
-<!-- DEMO SHEET -->
-<section class="sheet" id="demo" aria-label="Demo panel">
-  <div class="sh"><h2>Demo</h2><span class="tag">design preview · no robot connected</span><button class="x" data-close aria-label="Close">×</button></div>
+<!-- TEST PANEL -->
+<section class="sheet" id="demo" aria-label="Test panel">
+  <div class="sh"><h2>Test</h2><span class="tag" id="testTag">real commands</span><button class="x" data-close aria-label="Close">×</button></div>
   <div class="sub">Expressions</div>
   <div class="grid" id="exprs"></div>
-  <div class="sub">Try a conversation</div>
+  <div class="sub">Talk</div>
   <div class="grid">
-    <button class="pill" id="sc1">"Listen to me … what's the temperature today?"</button>
-    <button class="pill" id="sc2">"Come to me"</button>
-    <button class="pill" id="sc3">"إزيك يا بكر؟"</button>
-    <button class="pill" id="sc4">Leave him alone (sleep)</button>
+    <button class="pill" id="tIntroEn">Introduce yourself</button>
+    <button class="pill" id="tIntroAr">عرّف نفسك</button>
+    <button class="pill" id="tSleep">Sleep</button>
   </div>
-  <div class="sub">Hear BKR's voice</div>
+  <div class="sub">Robot body (needs Bluetooth)</div>
   <div class="grid">
-    <button class="pill" id="v1">English</button>
-    <button class="pill" id="v2">مصري</button>
+    <button class="pill" data-act="forward">Forward 1 s</button>
+    <button class="pill" data-act="back">Back 1 s</button>
+    <button class="pill" data-act="left">Left</button>
+    <button class="pill" data-act="right">Right</button>
+    <button class="pill" data-act="stop">STOP</button>
+    <button class="pill" data-act="wave">Wave</button>
+    <button class="pill" data-act="arms_up">Arms up</button>
+    <button class="pill" data-act="arms_down">Arms down</button>
+    <button class="pill" data-act="auto_on">Auto mode ON</button>
+    <button class="pill" data-act="auto_off">Auto mode OFF</button>
   </div>
-  <p class="note">The answers here are sample text to show the flow. In the real app the question goes to Gemini and the reply is spoken in a boy's voice.</p>
+  <div class="sub">Measure (for the poster results)</div>
+  <div class="grid">
+    <button class="pill" id="tLat">Latency test · 50 commands</button>
+    <button class="pill" id="tLog">Show robot log</button>
+  </div>
+  <div class="res" id="testOut">Results appear here.</div>
 </section>
 
 <!-- SETTINGS SHEET -->
 <section class="sheet" id="settings" aria-label="Settings">
   <div class="sh"><h2>Settings</h2><button class="x" data-close aria-label="Close">×</button></div>
-  <div class="sub">Robot body</div>
-  <div class="row"><span>Bluetooth · BKR-ESP32</span><button class="btn" id="connectBtn">Connect</button></div>
+
+  <div class="sub">Robot body (ESP32 · Bluetooth)</div>
+  <div class="row"><span id="bleRow">Not connected</span><button class="btn" id="connectBtn">Connect</button></div>
   <div class="row"><span>Motor speed</span><input type="range" id="speed" min="30" max="100" value="70" aria-label="Motor speed"></div>
-  <div class="sub">Voice &amp; AI</div>
-  <div class="field"><label for="key">Gemini API key</label><input id="key" type="password" placeholder="Paste your key (stays on this phone)"></div>
-  <div class="field"><label for="lang">BKR speaks</label><select id="lang"><option value="en">English</option><option value="ar">Egyptian Arabic</option><option value="auto" selected>Same language I speak</option></select></div>
-  <div class="field"><label for="voice">Voice</label><select id="voice"><option>Boy · English (default)</option><option>Boy · Arabic</option></select></div>
-  <div class="field"><label for="wake">Wake words</label><input id="wake" value="Hey BKR, Listen to me, بكر"></div>
+  <div class="row"><span>Avoid obstacles when I drive forward</span><input type="checkbox" id="avoid" checked aria-label="Avoid obstacles"></div>
+
+  <div class="sub">Brain (AI)</div>
+  <div class="field"><label for="prov">AI provider</label><select id="prov"><option value="gemini">Google Gemini</option><option value="openai">OpenAI ChatGPT</option><option value="none">None (built-in answers only)</option></select></div>
+  <div class="field"><label for="gKey">Gemini API key</label><input id="gKey" type="password" autocomplete="off" placeholder="From aistudio.google.com · stays on this phone"></div>
+  <div class="field"><label for="gModel">Gemini model</label><input id="gModel" value="gemini-2.5-flash"></div>
+  <div class="field"><label for="oKey">OpenAI API key</label><input id="oKey" type="password" autocomplete="off" placeholder="From platform.openai.com · stays on this phone"></div>
+  <div class="field"><label for="oModel">OpenAI model</label><input id="oModel" value="gpt-4o-mini"></div>
+  <div class="inline"><button class="btn" id="testAI">Test AI</button><span class="note" id="aiOut"></span></div>
+
+  <div class="sub">Voice</div>
+  <div class="field"><label for="veng">Robot voice engine</label><select id="veng"><option value="auto">Automatic (AI voice if a key is set)</option><option value="openai">OpenAI voice + robot effect</option><option value="gemini">Gemini voice + robot effect</option><option value="phone">Phone voice (offline, less robotic)</option></select></div>
+  <div class="row"><span>Robot effect</span><input type="range" id="fx" min="0" max="100" value="70" aria-label="Robot effect strength"></div>
+  <div class="inline"><button class="btn" id="vEn">Test English</button><button class="btn" id="vAr">Test عربي</button></div>
+  <div class="field" style="margin-top:12px"><label for="hear">I talk to BKR in</label><select id="hear"><option value="en-US">English</option><option value="ar-EG">Egyptian Arabic</option></select></div>
+  <div class="row"><span>Always listening for the wake word</span><input type="checkbox" id="wakeOn" aria-label="Wake word"></div>
+  <div class="field"><label for="wake">Wake words (comma separated)</label><input id="wake" value="Hey BKR, Listen to me, بكر, يا بكر"></div>
+
+  <div class="sub">Remote control website</div>
+  <div class="row"><span>Robot code <span class="code" id="roomCode">----</span></span><button class="btn" id="newCode">New code</button></div>
+  <div class="row"><span>Share camera &amp; allow remote control</span><input type="checkbox" id="remOn" aria-label="Allow remote control"></div>
+  <p class="note">Open the BKR website, type this code, press Connect. Works best when the phone and the computer use the same Wi-Fi or hotspot.</p>
+
   <div class="sub">Screen</div>
   <div class="row"><span>Show subtitles</span><input type="checkbox" id="subs" checked aria-label="Show subtitles"></div>
   <div class="row"><span>Look at me (face tracking)</span><input type="checkbox" id="track" checked aria-label="Face tracking"></div>
-  <div class="row"><span>Sleep after</span><select id="sleep" aria-label="Sleep after"><option>30 s</option><option selected>60 s</option><option>2 min</option></select></div>
-  <div style="display:flex;gap:10px;margin-top:14px"><button class="btn fill" id="saveBtn">Save</button><span class="note" id="saved"></span></div>
+  <div class="row"><span>Sleep after</span><select id="sleep" aria-label="Sleep after"><option value="30">30 s</option><option value="60" selected>60 s</option><option value="120">2 min</option></select></div>
+  <div style="display:flex;gap:10px;margin-top:14px;align-items:center"><button class="btn fill" id="saveBtn">Save</button><span class="note" id="saved"></span></div>
+  <p class="note">API keys are saved only in this phone's browser. Never put them in the website or on GitHub.</p>
 </section>
 
 <div id="start" role="button" tabindex="0" aria-label="Wake BKR">
   <div class="big">BKR</div>
   <div class="t">Tap to wake BKR</div>
-  <div class="s">Put the phone on the robot · landscape works best · design preview</div>
+  <div class="s">Put the phone on the robot · landscape works best</div>
 </div>
-
 <script>
 (() => {
-  const C = document.getElementById('face'), ctx = C.getContext('2d');
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const C = $('face'), ctx = C.getContext('2d');
   const MUSTARD = '#E9A91B', CREAM = '#F4ECDA', INK = '#0E0C09';
   let W = 0, H = 0, DPR = 1;
   function resize(){ DPR = Math.min(window.devicePixelRatio||1, 2); W = innerWidth; H = innerHeight; C.width = W*DPR; C.height = H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
   addEventListener('resize', resize); resize();
 
-  // ---------- expressions ----------
+  // =====================================================================
+  // SETTINGS (saved in this phone's browser only)
+  // =====================================================================
+  const DEF = { prov:'gemini', gKey:'', gModel:'gemini-2.5-flash', oKey:'', oModel:'gpt-4o-mini', veng:'auto', fx:70,
+    hear:'en-US', wakeOn:false, wake:'Hey BKR, Listen to me, بكر, يا بكر', subs:true, track:true, sleep:60, speed:70, avoid:true,
+    remOn:false, room:'' };
+  const FIELDS = ['prov','gKey','gModel','oKey','oModel','veng','fx','hear','wakeOn','wake','subs','track','sleep','speed','avoid','remOn'];
+  let S = {...DEF};
+  try { S = {...DEF, ...JSON.parse(localStorage.getItem('bkr-settings2')||'{}')}; } catch(e){}
+  if (!/^\d{4}$/.test(S.room)) S.room = String(1000 + Math.floor(Math.random()*9000));
+  function saveS(){ try { localStorage.setItem('bkr-settings2', JSON.stringify(S)); return true; } catch(e){ return false; } }
+  function fillForm(){ FIELDS.forEach(f=>{ const el=$(f); if (!el) return; if (el.type==='checkbox') el.checked = !!S[f]; else el.value = S[f]; }); $('roomCode').textContent = S.room; updLangChip(); }
+  function readForm(){ FIELDS.forEach(f=>{ const el=$(f); if (!el) return; if (el.type==='checkbox') S[f] = el.checked; else if (el.type==='range') S[f] = Number(el.value); else S[f] = el.value.trim(); }); S.sleep = Number(S.sleep)||60; }
+  fillForm(); saveS();
+
+  // =====================================================================
+  // FACE (expressions + animation)
+  // =====================================================================
   const EX = {
     neutral:   {w:1,   h:1,    r:.30, top:0,   tilt:0,    bot:0,   gy:0},
     happy:     {w:1.04,h:1,    r:.34, top:0,   tilt:0,    bot:.50, gy:-.1},
@@ -153,12 +223,14 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
     listening: {w:1.06,h:1.08, r:.36, top:0,   tilt:0,    bot:0,   gy:0},
     love:      {w:1,   h:1,    r:.30, top:0,   tilt:0,    bot:0,   gy:0},
   };
+  const MOODS = Object.keys(EX);
   const cur = {...EX.neutral}; let mood = 'neutral', moodUntil = 0, hearts = 0;
   let gaze = {x:0,y:0}, gazeT = {x:0,y:0}, nextWander = 0, blink = 0, nextBlink = 1500;
   let mode = 'idle'; // idle | listening | thinking | speaking
   let lastTouch = performance.now(), asleep = false, bounce = 0;
+  let mouthLevel = 0;             // 0..1 from the real voice audio (robot voice engine)
 
-  function setMood(m, ms=0){ mood = m; moodUntil = ms ? performance.now()+ms : 0; document.getElementById('moodChip').textContent = 'mood · ' + m; hearts = (m==='love')?1:hearts; renderExprPills(); }
+  function setMood(m, ms=0){ if (!EX[m]) m = 'neutral'; mood = m; moodUntil = ms ? performance.now()+ms : 0; $('moodChip').textContent = 'mood · ' + m; hearts = (m==='love')?1:hearts; renderExprPills(); }
 
   function lidTop(ex, ey, ew, eh, top, tilt, dir){
     if (top <= 0.001) return;
@@ -174,20 +246,16 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
   function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 
   function draw(t){
-    // targets
     const target = EX[asleep ? 'sleepy' : mood] || EX.neutral;
     for (const k in target) cur[k] += (target[k]-cur[k]) * 0.16;
     if (mood !== 'love') hearts += (0 - hearts)*0.2; else hearts += (1-hearts)*0.2;
     if (moodUntil && t > moodUntil){ moodUntil = 0; setMood(mode==='listening'?'listening':'neutral'); }
-    // gaze wander
     if (t > nextWander && mode==='idle'){ gazeT = {x:(Math.random()*2-1)*.7, y:(Math.random()*2-1)*.35}; nextWander = t + 1600 + Math.random()*2600; }
     gaze.x += (gazeT.x-gaze.x)*.08; gaze.y += (gazeT.y-gaze.y)*.08;
-    // blink
     if (t > nextBlink && !asleep){ blink = 1; nextBlink = t + 2500 + Math.random()*3500; }
     blink = Math.max(0, blink - 0.09);
     const bl = blink > 0 ? Math.sin(blink*Math.PI) : 0;
-    // sleep
-    if (!asleep && mode==='idle' && t - lastTouch > 60000){ asleep = true; setMood('sleepy'); }
+    if (!asleep && mode==='idle' && t - lastTouch > S.sleep*1000){ asleep = true; setMood('sleepy'); }
     bounce *= 0.9;
 
     ctx.fillStyle = INK; ctx.fillRect(0,0,W,H);
@@ -202,16 +270,13 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
     const cy = H*0.43 + breathe + (gaze.y + cur.gy*0.6)*base*0.22 - bounce*base*0.15;
     const gx = gaze.x*base*0.3;
 
-    for (const dir of [1,-1]) { // 1 = left eye (inner side on the right)
+    for (const dir of [1,-1]) {
       const cx = W/2 + gx + (dir===1 ? -(gap/2+ew/2) : (gap/2+ew/2));
       const ex = cx - ew/2, ey = cy - eh/2;
-      if (hearts > 0.5){
-        ctx.fillStyle = MUSTARD; heart(cx, cy, ew*0.75*(1+Math.sin(t/180)*0.05)); continue;
-      }
+      if (hearts > 0.5){ ctx.fillStyle = MUSTARD; heart(cx, cy, ew*0.75*(1+Math.sin(t/180)*0.05)); continue; }
       ctx.save();
       rr(ex, ey, ew, eh, ew*cur.r); ctx.clip();
       ctx.fillStyle = MUSTARD; ctx.fillRect(ex, ey, ew, eh);
-      // highlight
       ctx.fillStyle = 'rgba(244,236,218,0.85)';
       rr(ex+ew*0.18, ey+eh*0.14, ew*0.2, Math.max(2,eh*0.16), ew*0.08); ctx.fill();
       ctx.fillStyle = INK;
@@ -219,7 +284,6 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
       if (cur.bot > 0.01){ const ry = eh*0.62; ctx.beginPath(); ctx.ellipse(cx, ey+eh + ry*(1-2*cur.bot), ew*0.85, ry, 0, 0, Math.PI*2); ctx.fill(); }
       ctx.restore();
     }
-    // listening ring + wave / speaking wave / thinking dots
     const wy = cy + base*1.05;
     if (mode === 'listening'){
       ctx.strokeStyle = 'rgba(233,169,27,'+(0.25+0.2*Math.sin(t/200))+')'; ctx.lineWidth = 3;
@@ -228,8 +292,11 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
     if (mode === 'speaking' || mode === 'listening'){
       const n = 9, bw = base*0.07;
       for (let i=0;i<n;i++){
-        const a = mode==='speaking' ? (0.3+0.7*Math.abs(Math.sin(t/110 + i*0.9))) : (0.2+0.25*Math.abs(Math.sin(t/260+i)));
-        const bh = base*0.32*a; ctx.fillStyle = i%2 ? CREAM : MUSTARD;
+        let a;
+        if (mode==='speaking'){
+          a = Voice.usingAudio ? (0.15 + 0.85*Math.min(1, mouthLevel*(1.2+0.5*Math.sin(t/90+i*1.3)))) : (0.3+0.7*Math.abs(Math.sin(t/110 + i*0.9)));
+        } else a = 0.2+0.25*Math.abs(Math.sin(t/260+i)) + Ears.level*0.6;
+        const bh = base*0.32*Math.min(1,a); ctx.fillStyle = i%2 ? CREAM : MUSTARD;
         rr(W/2 + (i-(n-1)/2)*bw*1.8 - bw/2, wy - bh/2, bw, bh, bw/2); ctx.fill();
       }
     }
@@ -240,43 +307,517 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
     requestAnimationFrame(draw);
   }
 
-  // ---------- sounds ----------
+  // =====================================================================
+  // CAPTIONS + small helpers
+  // =====================================================================
+  const cap = $('cap');
+  let capTimer = null;
+  function say(you, bkr, sys){
+    clearTimeout(capTimer);
+    cap.innerHTML = '';
+    if (!S.subs && !sys) return;
+    if (you){ const p = document.createElement('p'); p.className='you'; p.innerHTML = '<b>YOU</b>'; p.append(you); cap.append(p); }
+    if (bkr){ const p = document.createElement('p'); p.innerHTML = '<b>BKR</b>'; p.append(bkr); p.dir = 'auto'; cap.append(p); }
+    if (sys){ const p = document.createElement('p'); p.className='sys'; p.innerHTML = '<b>!</b>'; p.append(sys); cap.append(p); }
+  }
+  function sysMsg(text, ms=4500){ say(null, null, text); capTimer = setTimeout(()=>{ cap.innerHTML=''; }, ms); }
+  function note(text){ const p = document.createElement('p'); p.className='sys'; p.innerHTML='<b>!</b>'; p.append(text); cap.append(p); }
+  function setMode(m){ mode = m; $('micBtn').classList.toggle('live', m==='listening'); }
+  let cmdTimer = null;
+  function showCmd(txt){ const c = $('cmd'); c.textContent = '→ ESP32: ' + txt; c.classList.add('show'); clearTimeout(cmdTimer); cmdTimer = setTimeout(()=>c.classList.remove('show'), 1600); }
+  const isAr = t => /[؀-ۿ]/.test(t||'');
+  const sleepMs = ms => new Promise(r => setTimeout(r, ms));
+  const robotLog = [];
+  function logR(line){ robotLog.push(new Date().toLocaleTimeString()+'  '+line); if (robotLog.length > 200) robotLog.shift(); }
+
+  // =====================================================================
+  // SOUNDS
+  // =====================================================================
   let AC = null;
   function chirp(type){
     if (!AC) return; const o = AC.createOscillator(), gn = AC.createGain(); o.connect(gn); gn.connect(AC.destination);
-    const now = AC.currentTime; const seq = {happy:[660,990], angry:[300,200], wake:[440,880], love:[520,780,1040], surprised:[400,1200], listen:[880,1320], done:[990,660]}[type] || [600,800];
+    const now = AC.currentTime; const seq = {happy:[660,990], angry:[300,200], wake:[440,880], love:[520,780,1040], surprised:[400,1200], listen:[880,1320], done:[990,660], robot:[700,520,860]}[type] || [600,800];
     o.type = 'triangle'; gn.gain.setValueAtTime(0.0001, now); gn.gain.exponentialRampToValueAtTime(0.18, now+0.02);
     seq.forEach((f,i)=> o.frequency.setValueAtTime(f, now + i*0.09));
     gn.gain.exponentialRampToValueAtTime(0.0001, now + seq.length*0.09 + 0.12); o.start(now); o.stop(now + seq.length*0.09 + 0.15);
   }
 
-  // ---------- voice (boy robot) ----------
-  let voices = [];
-  function loadVoices(){ try { voices = speechSynthesis.getVoices() || []; } catch(e){ voices = []; } }
-  try { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; } catch(e){}
-  function pickVoice(lang){
-    const pool = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(lang));
-    const male = pool.find(v => /male|man|boy|guy|david|daniel|iom|iol|tpd|rjs|ard|arz/i.test(v.name) && !/female/i.test(v.name));
-    return male || pool[0] || null;
-  }
-  function speak(text, onend){
-    try {
-      const ar = /[\u0600-\u06FF]/.test(text);
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = ar ? 'ar-EG' : 'en-US';
-      const v = pickVoice(ar ? 'ar' : 'en'); if (v) u.voice = v;
-      u.pitch = 1.45; u.rate = ar ? 0.95 : 1.02; u.volume = 1;
-      u.onend = () => onend && onend();
-      speechSynthesis.cancel(); speechSynthesis.speak(u);
-    } catch(e){ onend && onend(); }
-  }
+  // =====================================================================
+  // VOICE: AI text-to-speech + Web Audio robot effect, phone voice as fallback
+  // =====================================================================
+  const Voice = (() => {
+    const cache = new Map();
+    let curSrc = null, usingAudio = false, stopFlag = 0;
+    let phoneVoices = [];
+    try { const lv = () => { phoneVoices = speechSynthesis.getVoices() || []; }; lv(); speechSynthesis.onvoiceschanged = lv; } catch(e){}
 
-  // ---------- touch ----------
-  let downAt = 0, downX = 0, downY = 0, holdTimer = null, taps = [];
+    function engine(){
+      const v = S.veng;
+      if (v === 'openai') return S.oKey ? 'openai' : 'phone';
+      if (v === 'gemini') return S.gKey ? 'gemini' : 'phone';
+      if (v === 'phone') return 'phone';
+      if (S.prov === 'openai' && S.oKey) return 'openai';
+      if (S.gKey) return 'gemini';
+      if (S.oKey) return 'openai';
+      return 'phone';
+    }
+    async function ttsOpenAI(text){
+      const r = await fetch('https://api.openai.com/v1/audio/speech', { method:'POST',
+        headers:{'Authorization':'Bearer '+S.oKey,'Content-Type':'application/json'},
+        body: JSON.stringify({ model:'gpt-4o-mini-tts', voice:'echo', input:text, response_format:'mp3',
+          instructions:'You are BKR, a small friendly robot. Speak clearly and a little flat and mechanical, upbeat, like a cartoon robot. If the text is Arabic, speak Egyptian Arabic.' }) });
+      if (!r.ok) throw new Error('OpenAI voice '+r.status+': '+(await r.text()).slice(0,160));
+      return await AC.decodeAudioData(await r.arrayBuffer());
+    }
+    async function ttsGemini(text){
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent', { method:'POST',
+        headers:{'x-goog-api-key':S.gKey,'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{parts:[{text:'Say this as a small friendly robot, clear and slightly mechanical: '+text}]}],
+          generationConfig:{ responseModalities:['AUDIO'], speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName:'Puck' } } } } }) });
+      if (!r.ok) throw new Error('Gemini voice '+r.status+': '+(await r.text()).slice(0,160));
+      const j = await r.json();
+      const part = j?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      if (!part) throw new Error('Gemini voice: no audio returned');
+      const raw = atob(part.inlineData.data), n = raw.length >> 1;
+      const m = /rate=(\d+)/.exec(part.inlineData.mimeType||''); const rate = m ? Number(m[1]) : 24000;
+      const buf = AC.createBuffer(1, n, rate), ch = buf.getChannelData(0);
+      for (let i=0;i<n;i++){ let v = raw.charCodeAt(2*i) | (raw.charCodeAt(2*i+1) << 8); if (v >= 32768) v -= 65536; ch[i] = v/32768; }
+      return buf;
+    }
+    // robot effect: ring modulator + metallic comb + presence, level meter for the mouth
+    function playRobot(buf){
+      return new Promise(resolve => {
+        const m = Math.max(0, Math.min(1, S.fx/100));
+        const src = AC.createBufferSource(); src.buffer = buf; src.playbackRate.value = 1 + 0.06*m;
+        const dry = AC.createGain(); dry.gain.value = 1 - 0.55*m;
+        const ring = AC.createGain(); ring.gain.value = 0;
+        const osc = AC.createOscillator(); osc.type = 'sine'; osc.frequency.value = 52;
+        const oscAmt = AC.createGain(); oscAmt.gain.value = 1; osc.connect(oscAmt); oscAmt.connect(ring.gain);
+        const wet = AC.createGain(); wet.gain.value = 0.9*m;
+        const sum = AC.createGain();
+        const comb = AC.createDelay(0.05); comb.delayTime.value = 0.009;
+        const fb = AC.createGain(); fb.gain.value = 0.42*m;
+        const combOut = AC.createGain(); combOut.gain.value = 0.6*m;
+        const pres = AC.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 2200; pres.Q.value = 0.9; pres.gain.value = 5*m;
+        const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 140;
+        const comp = AC.createDynamicsCompressor();
+        const an = AC.createAnalyser(); an.fftSize = 512;
+        src.connect(dry); src.connect(ring); ring.connect(wet);
+        dry.connect(sum); wet.connect(sum);
+        sum.connect(comb); comb.connect(fb); fb.connect(comb); comb.connect(combOut);
+        sum.connect(hp); combOut.connect(hp); hp.connect(pres); pres.connect(comp); comp.connect(an); an.connect(AC.destination);
+        const data = new Uint8Array(an.fftSize); let live = true;
+        (function meter(){ if (!live) { mouthLevel = 0; return; } an.getByteTimeDomainData(data); let s=0; for (let i=0;i<data.length;i++){ const v=(data[i]-128)/128; s+=v*v; } mouthLevel = Math.min(1, Math.sqrt(s/data.length)*4); requestAnimationFrame(meter); })();
+        src.onended = () => { live = false; try{ osc.stop(); }catch(e){} curSrc = null; resolve(); };
+        curSrc = src; osc.start(); src.start();
+      });
+    }
+    function phoneSay(text){
+      return new Promise(resolve => {
+        try {
+          const ar = isAr(text); const u = new SpeechSynthesisUtterance(text);
+          u.lang = ar ? 'ar-EG' : 'en-US';
+          const pool = phoneVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith(ar?'ar':'en'));
+          const male = pool.find(v => /male|man|boy|guy|david|daniel|iom|iol|tpd|rjs|ard|arz/i.test(v.name) && !/female/i.test(v.name));
+          if (male || pool[0]) u.voice = male || pool[0];
+          // flatter, lower and a bit slower = more "robot" than the default phone voice
+          u.pitch = 0.75; u.rate = ar ? 0.92 : 0.95; u.volume = 1;
+          let done = false; const fin = () => { if (!done){ done = true; resolve(); } };
+          u.onend = fin; u.onerror = fin;
+          speechSynthesis.cancel(); speechSynthesis.speak(u);
+          setTimeout(fin, 1500 + text.length*110);     // Android sometimes never fires onend
+        } catch(e){ resolve(); }
+      });
+    }
+    async function speak(text){
+      if (!text) return;
+      const my = ++stopFlag;
+      const eng = engine(); const key = eng+'|'+S.fx+'|'+text;
+      if (eng !== 'phone' && AC){
+        try {
+          if (AC.state === 'suspended') await AC.resume();
+          let buf = cache.get(eng+'|'+text);
+          if (!buf){ buf = eng === 'openai' ? await ttsOpenAI(text) : await ttsGemini(text); cache.set(eng+'|'+text, buf); if (cache.size > 30) cache.delete(cache.keys().next().value); }
+          if (my !== stopFlag) return;
+          chirp('robot'); await sleepMs(260);
+          usingAudio = true; await playRobot(buf); usingAudio = false;
+          return;
+        } catch(e){ usingAudio = false; logR('voice error: '+e.message); console.warn(e); note('AI voice failed, using the phone voice: '+e.message.slice(0,90)); }
+      }
+      if (my !== stopFlag) return;
+      chirp('robot'); await sleepMs(260);
+      await phoneSay(text);
+    }
+    function stop(){ stopFlag++; try{ curSrc && curSrc.stop(); }catch(e){} try{ speechSynthesis.cancel(); }catch(e){} usingAudio = false; }
+    return { speak, stop, engine, get usingAudio(){ return usingAudio; } };
+  })();
+
+  // =====================================================================
+  // EARS: speech-to-text (Chrome on Android), Arabic or English
+  // =====================================================================
+  const Ears = (() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let rec = null, active = false, wakeLoop = false, wantCmd = false, level = 0;
+    function supported(){ return !!SR; }
+    function wakeWords(){ return S.wake.split(',').map(w => w.trim().toLowerCase()).filter(Boolean); }
+    function make(continuous){
+      const r = new SR(); r.lang = S.hear; r.interimResults = true; r.continuous = continuous; r.maxAlternatives = 1; return r;
+    }
+    function listenOnce(){
+      if (!SR){ sysMsg('Speech recognition is not available in this browser. Use Chrome on Android.'); return; }
+      stopAll(); Voice.stop();
+      rec = make(false); active = true; let finalText = '';
+      setMode('listening'); setMood('listening'); chirp('listen'); say(null, null, null);
+      rec.onresult = e => { let t = ''; for (let i=e.resultIndex;i<e.results.length;i++){ t += e.results[i][0].transcript; if (e.results[i].isFinal) finalText = t; } level = 0.6; setTimeout(()=>level=0, 150); say(t, null); };
+      rec.onerror = e => { active = false;
+        const msg = {'not-allowed':'Microphone permission is blocked. Allow the microphone for this site in Chrome settings.','no-speech':'I did not hear anything. Tap the mic and try again.','network':'Speech recognition needs internet.','audio-capture':'No microphone found.'}[e.error] || ('Speech error: '+e.error);
+        setMode('idle'); setMood(e.error==='no-speech'?'neutral':'sad', 1500); sysMsg(msg); };
+      rec.onend = () => { if (!active) { resumeWake(); return; } active = false; const t = finalText.trim();
+        if (t){ Brain.handle(t, 'voice'); } else { setMode('idle'); setMood('neutral'); cap.innerHTML=''; resumeWake(); } };
+      try { rec.start(); } catch(e){ active = false; setMode('idle'); sysMsg('Could not start the microphone: '+e.message); }
+    }
+    function stopAll(){ wakeLoop = false; active = false; try { rec && rec.abort(); } catch(e){} rec = null; }
+    // always-listening mode: waits for a wake word, then treats the rest as the request
+    function startWake(){
+      if (!SR || !S.wakeOn || mode !== 'idle') return;
+      if (wakeLoop) return; wakeLoop = true;
+      rec = make(true);
+      rec.onresult = e => {
+        for (let i=e.resultIndex;i<e.results.length;i++){
+          if (!e.results[i].isFinal) continue;
+          const t = e.results[i][0].transcript.trim(), low = t.toLowerCase();
+          const w = wakeWords().find(w => low.includes(w));
+          if (!w) continue;
+          const rest = t.slice(low.indexOf(w) + w.length).replace(/^[\s,،.!?]+/, '').trim();
+          stopAll(); wake();
+          if (rest.length > 1) Brain.handle(rest, 'voice'); else listenOnce();
+          return;
+        }
+      };
+      rec.onerror = e => { if (e.error === 'not-allowed'){ S.wakeOn = false; sysMsg('Microphone blocked: wake word turned off.'); } };
+      rec.onend = () => { const was = wakeLoop; wakeLoop = false; if (was) setTimeout(startWake, 400); };
+      try { rec.start(); } catch(e){ wakeLoop = false; }
+    }
+    function resumeWake(){ if (S.wakeOn) setTimeout(startWake, 600); }
+    return { listenOnce, stopAll, startWake, resumeWake, supported, get active(){ return active; }, get level(){ return level; } };
+  })();
+
+  // =====================================================================
+  // BODY: Web Bluetooth link to the ESP32 (Nordic UART service)
+  // =====================================================================
+  const Body = (() => {
+    const SVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e', RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e', TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+    let dev = null, rx = null, state = 'off', hb = null, chain = Promise.resolve(), busy = 0, tries = 0;
+    let dist = -1, bodyMode = 'MAN', lastLine = '';
+    const waiters = [];      // {prefix, resolve, t0}
+    const enc = new TextEncoder(), dec = new TextDecoder();
+    function setState(s, extra=''){
+      state = s;
+      const dot = $('bleDot'), txt = $('bleTxt');
+      dot.className = 'dot' + (s==='on' ? ' on' : (s==='connecting'||s==='reconnecting' ? ' mid' : ''));
+      const label = {off:'Robot body · tap to connect', connecting:'Robot body · connecting…', reconnecting:'Robot body · reconnecting…', on:'Robot body · connected'+(dist>=0?' · '+dist+' cm':'')}[s] + extra;
+      txt.textContent = label; $('bleRow').textContent = label.replace('Robot body · ','');
+      $('connectBtn').textContent = s === 'off' ? 'Connect' : 'Disconnect';
+      Remote.push();
+    }
+    async function connect(){
+      if (!navigator.bluetooth){ sysMsg('Bluetooth needs Chrome on Android and an https:// link (GitHub Pages).'); return; }
+      try {
+        setState('connecting');
+        dev = await navigator.bluetooth.requestDevice({ filters:[{ namePrefix:'BKR' }], optionalServices:[SVC] });
+        dev.addEventListener('gattserverdisconnected', onLost);
+        await open();
+        chirp('happy'); setMood('happy', 1500); sysMsg('Robot body connected.', 2500);
+      } catch(e){ setState('off'); if (e.name !== 'NotFoundError') sysMsg('Bluetooth: '+e.message); }
+    }
+    async function open(){
+      const server = await dev.gatt.connect();
+      const svc = await server.getPrimaryService(SVC);
+      rx = await svc.getCharacteristic(RX);
+      const tx = await svc.getCharacteristic(TX);
+      await tx.startNotifications();
+      tx.addEventListener('characteristicvaluechanged', ev => onLine(dec.decode(ev.target.value)));
+      tries = 0; setState('on');
+      clearInterval(hb); hb = setInterval(() => { if (state==='on' && busy === 0) write('H', true); }, 200);
+      send(S.avoid ? 'AVOID1' : 'AVOID0');
+    }
+    async function onLost(){
+      clearInterval(hb); rx = null;
+      if (state === 'off') return;           // user pressed disconnect
+      setState('reconnecting'); setMood('sad', 1500); logR('bluetooth link lost');
+      while (dev && state === 'reconnecting' && tries < 12){
+        tries++; await sleepMs(Math.min(4000, 600*tries));
+        try { await open(); sysMsg('Robot body reconnected.', 2000); return; } catch(e){}
+      }
+      if (state === 'reconnecting'){ setState('off'); sysMsg('Lost the robot body. Tap "Robot body" to connect again.'); }
+    }
+    function disconnect(){ state = 'off'; clearInterval(hb); try { dev && dev.gatt.connected && dev.gatt.disconnect(); } catch(e){} rx = null; setState('off'); }
+    function write(cmd, quiet){
+      if (!rx) return Promise.resolve(false);
+      busy++;
+      chain = chain.then(async () => {
+        try {
+          const data = enc.encode(cmd);
+          if (rx.writeValueWithoutResponse) await rx.writeValueWithoutResponse(data); else await rx.writeValue(data);
+          if (!quiet) logR('→ '+cmd);
+          return true;
+        } catch(e){ logR('write failed '+cmd+': '+e.message); return false; }
+        finally { busy--; }
+      });
+      return chain;
+    }
+    function send(cmd){ if (state !== 'on') return Promise.resolve(false); showCmd(cmd); return write(cmd); }
+    function waitFor(prefix, ms=1500){ return new Promise(res => { const w = {prefix, resolve:res, t0:performance.now()}; waiters.push(w); setTimeout(()=>{ const i = waiters.indexOf(w); if (i>=0){ waiters.splice(i,1); res(null); } }, ms); }); }
+    // round trip: phone -> ESP32 -> phone. Returns ms or null.
+    async function probe(){
+      if (state !== 'on') return null;
+      const t0 = performance.now(); const p = waitFor('D:'); await write('D', true);
+      const line = await p; return line === null ? null : performance.now() - t0;
+    }
+    function onLine(chunk){
+      chunk.split('\n').map(s=>s.trim()).filter(Boolean).forEach(line => {
+        lastLine = line;
+        for (let i=0;i<waiters.length;i++){ if (line.startsWith(waiters[i].prefix)){ const w = waiters.splice(i,1)[0]; w.resolve(line); break; } }
+        if (line.startsWith('T:')){ const p = line.slice(2).split(','); dist = Number(p[1]); bodyMode = p[2]||'MAN'; if (state==='on') setState('on'); return; }
+        logR('← '+line);
+        if (line.startsWith('D:')) dist = Number(line.slice(2));
+        else if (line.startsWith('OBS:')){ setMood('surprised', 1200); chirp('surprised'); Remote.event('Obstacle at '+line.slice(4)+' cm'); }
+        else if (line.startsWith('AVOID:')){ const d = line.slice(6).split(' ')[0]; Remote.event('Avoiding: '+d.toLowerCase()); if (d==='STUCK'){ setMood('sad', 2000); } }
+        else if (line.startsWith('STOP:watchdog')){ Remote.event('Watchdog stop'); }
+      });
+    }
+    // high-level actions (from voice / AI / test panel / website)
+    let actTimer = null;
+    async function action(a){
+      if (!a || !a.type || a.type === 'none') return;
+      const t = a.type, sec = Math.max(0.3, Math.min(5, Number(a.seconds)||1.2));
+      if (state !== 'on'){ note('Robot body not connected: no movement.'); return; }
+      clearTimeout(actTimer);
+      const sp = S.speed;
+      const map = { forward:'F'+sp, back:'B'+sp, left:'L'+sp, right:'R'+sp };
+      if (map[t]){ await send(map[t]); actTimer = setTimeout(()=>send('S'), (t==='left'||t==='right') ? Math.min(sec, 1.5)*1000 : sec*1000); return; }
+      const one = { stop:'S', wave:'W', arms_up:'A170,170', arms_down:'A20,20', arms_middle:'A90,90', auto_on:'AUTO1', auto_off:'AUTO0' }[t];
+      if (one) await send(one);
+    }
+    return { connect, disconnect, send, action, probe, get state(){ return state; }, get dist(){ return dist; }, get mode(){ return bodyMode; } };
+  })();
+
+  // =====================================================================
+  // BRAIN: built-in answers + Gemini / OpenAI, returns {reply, emotion, action}
+  // =====================================================================
+  const Brain = (() => {
+    const history = [];       // {role:'user'|'assistant', text}
+    const INTRO_EN = "Hi! I'm BKR, a low-cost robot that turns any smartphone into a robot's brain. My phone is my face, my ears and my eyes, and an ESP32 drives my wheels and arms. Mohamed and Ismail built me for ISEF to give old phones a second life.";
+    const INTRO_AR = 'أهلًا! أنا بكر، روبوت رخيص بيحوّل أي موبايل لعقل روبوت. الموبايل هو وشي وودني وعنيا، والـ ESP32 بيحرّك عجلي ودراعاتي. محمد وإسماعيل عملوني لمسابقة آيسف علشان الموبايلات القديمة تعيش تاني.';
+    const NO_AI_EN = "My AI brain isn't connected yet. Add a Gemini or OpenAI key in my settings, and I'll be able to answer anything.";
+    const NO_AI_AR = 'عقلي الذكي لسه مش متوصل. حط مفتاح Gemini أو OpenAI في الإعدادات وهقدر أرد على أي سؤال.';
+    const SYSTEM = [
+      'You are BKR (بكر), a small friendly robot built by two Egyptian students, Mohamed and Ismail, for the ISEF science fair in Assiut, Egypt.',
+      'Your body: any smartphone is your brain and face (screen = eyes, microphone = ears, camera = eyes), on a 4-wheel ESP32 body with two arms and an ultrasonic distance sensor on a turning servo.',
+      'You cannot measure temperature, heart rate or anything else yet; never pretend to. You can move, wave, raise arms and avoid obstacles.',
+      'Reply in the SAME language the user used. If the user speaks Arabic, answer in friendly Egyptian Arabic (عامية مصرية).',
+      'Keep replies short: at most 2 sentences, simple words, kid-friendly, warm and a little playful.',
+      'Return ONLY a JSON object: {"reply": string, "emotion": one of ["neutral","happy","sad","angry","surprised","sleepy","thinking","love"], "action": {"type": one of ["none","forward","back","left","right","stop","wave","arms_up","arms_down","auto_on","auto_off"], "seconds": number 0-5}}.',
+      'Only use a movement action when the user clearly asks you to move. Otherwise use {"type":"none","seconds":0}.'
+    ].join('\n');
+
+    // built-in intents: work offline, no API key needed
+    function local(text){
+      const t = text.toLowerCase().replace(/[!?.،؟]/g,' ').trim();
+      const ar = isAr(text);
+      const R = (reply, emotion, type, seconds) => ({ reply, emotion, action: type ? {type, seconds: seconds||0} : {type:'none', seconds:0} });
+      if (/introduce yourself|who are you|what('s| is) your name|tell me about yourself/.test(t) || /عر[فّ]+ ?(ن|ني )?(نفسك|بنفسك)|قد[مّ]+ نفسك|ا?نت مين|إنت مين|اسمك (ايه|إيه|اية)/.test(t))
+        return R(ar ? INTRO_AR : INTRO_EN, 'happy', 'wave');
+      if (/^(stop|stop it|halt|freeze|stop moving)$|\bstop (moving|now|right now)\b/.test(t) || /^(اقف|إقف|وقف|استنى|بس|اقف يا بكر)$|اقف مكانك|وقف حالا/.test(t)) return R(ar ? 'حاضر، وقفت.' : 'Okay, stopping.', 'neutral', 'stop');
+      if (/auto(matic)? mode off|stop exploring/.test(t) || /(كفاية استكشاف|بطل تلف لوحدك)/.test(t)) return R(ar ? 'تمام، بطلت.' : 'Okay, I stopped exploring.', 'neutral', 'auto_off');
+      if (/auto(matic)? mode( on)?$|\bexplore\b|drive (by )?yourself|\broam\b/.test(t) || /(استكشف|لف لوحدك|امشي لوحدك|الوضع التلقائي|وضع تلقائي)/.test(t)) return R(ar ? 'هلف لوحدي وأتفادى العقبات!' : "I'll explore on my own and avoid obstacles!", 'happy', 'auto_on');
+      if (/how far|what('s| is) in front|distance/.test(t) || /(المسافة|قدامك ايه|قدامك إيه|بعيد قد ايه|بعيد قد إيه)/.test(t)){
+        const d = Body.dist; if (Body.state !== 'on') return R(ar ? 'جسمي مش متوصل دلوقتي، فمش قادر أقيس.' : "My body isn't connected, so I can't measure right now.", 'sad');
+        if (d < 0) return R(ar ? 'مفيش حاجة قريبة قدامي.' : 'Nothing is close in front of me.', 'happy');
+        return R(ar ? 'فيه حاجة على بعد '+d+' سنتي قدامي.' : 'Something is '+d+' centimeters in front of me.', 'surprised');
+      }
+      if (/\b(go|move|drive) back(ward)?s?\b|^back(ward)?s?$|\breverse\b/.test(t) || /(ارجع|إرجع) ?(لورا|ورا)?|^(لورا|ورا)$|(امشي|روح) (لورا|ورا)/.test(t)) return R(ar ? 'راجع لورا.' : 'Going back.', 'neutral', 'back', 1.2);
+      if (/\b(go|move|drive) (straight |ahead|forward)|^forward$|come (here|to me)/.test(t) || /^(امشي|إمشي|اتحرك|لقدام|قدام)$|(امشي|إمشي|روح|اتحرك|اطلع) (لقدام|قدام|على طول)|تعالى (هنا|لي|ليا|عندي)/.test(t)) return R(ar ? 'ماشي لقدام!' : 'Moving forward!', 'happy', 'forward', 1.5);
+      if (/\b(turn|go|move) (to (the )?)?left\b|^left$/.test(t) || /(لف|روح|خش|حود|اتحرك) ?(على |ع |لل?|ناحية )?(الشمال|شمال|اليسار|يسار)|^(شمال|يسار)$/.test(t)) return R(ar ? 'هلف شمال.' : 'Turning left.', 'neutral', 'left', 0.8);
+      if (/\b(turn|go|move) (to (the )?)?right\b|^right$/.test(t) || /(لف|روح|خش|حود|اتحرك) ?(على |ع |لل?|ناحية )?(اليمين|يمين)|^يمين$/.test(t)) return R(ar ? 'هلف يمين.' : 'Turning right.', 'neutral', 'right', 0.8);
+      if (/(hands|arms) up|raise your (hands|arms)/.test(t) || /(ارفع|إرفع|علي|علّي) (ايدك|إيدك|ايديك|إيديك|دراعاتك|دراعك)/.test(t)) return R(ar ? 'إيديا فوق!' : 'Hands up!', 'happy', 'arms_up');
+      if (/(hands|arms) down|put your (hands|arms) down/.test(t) || /نز[لّ]+ (ايدك|إيدك|ايديك|إيديك|دراعاتك|دراعك)/.test(t)) return R(ar ? 'نزلتهم.' : 'Arms down.', 'neutral', 'arms_down');
+      if (/\bwave\b|say (hi|hello)/.test(t) || /سل[مّ] عل|شاور|^باي$/.test(t)) return R(ar ? 'أهلًا بيك!' : 'Hello there!', 'happy', 'wave');
+      if (/go to sleep|sleep now/.test(t) || /^(نام|نام يا بكر)$/.test(t)) return { ...R(ar ? 'تصبح على خير.' : 'Good night.', 'sleepy'), sleep:true };
+      return null;
+    }
+    function parseJSON(txt){
+      if (!txt) throw new Error('empty reply');
+      let s = txt.trim().replace(/^```(json)?/i,'').replace(/```$/,'').trim();
+      const a = s.indexOf('{'), b = s.lastIndexOf('}'); if (a >= 0 && b > a) s = s.slice(a, b+1);
+      const j = JSON.parse(s);
+      return { reply: String(j.reply||'').slice(0, 600), emotion: MOODS.includes(j.emotion) ? j.emotion : 'neutral',
+               action: (j.action && typeof j.action === 'object') ? { type: String(j.action.type||'none'), seconds: Number(j.action.seconds)||0 } : {type:'none',seconds:0} };
+    }
+    function context(){ return '\n[Robot status: body '+(Body.state==='on'?'connected':'not connected')+(Body.dist>=0?', obstacle '+Body.dist+' cm ahead':'')+']'; }
+    async function askGemini(text){
+      const contents = history.slice(-8).map(h => ({ role: h.role === 'assistant' ? 'model' : 'user', parts:[{text:h.text}] }));
+      contents.push({ role:'user', parts:[{ text: text + context() }] });
+      const gc = { responseMimeType:'application/json', temperature:0.8, maxOutputTokens:1024 };
+      if (/2\.5-flash/.test(S.gModel)) gc.thinkingConfig = { thinkingBudget: 0 };   // faster replies on 2.5 Flash
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(S.gModel)+':generateContent', {
+        method:'POST', headers:{'x-goog-api-key':S.gKey,'Content-Type':'application/json'},
+        body: JSON.stringify({ systemInstruction:{ parts:[{text:SYSTEM}] }, contents, generationConfig: gc }) });
+      if (!r.ok) throw new Error('Gemini '+r.status+': '+(await r.text()).slice(0,200));
+      const j = await r.json();
+      const txt = (j?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+      return parseJSON(txt);
+    }
+    async function askOpenAI(text){
+      const messages = [{role:'system', content:SYSTEM}, ...history.slice(-8).map(h => ({role:h.role, content:h.text})), {role:'user', content: text + context()}];
+      const r = await fetch('https://api.openai.com/v1/chat/completions', { method:'POST',
+        headers:{'Authorization':'Bearer '+S.oKey,'Content-Type':'application/json'},
+        body: JSON.stringify({ model:S.oModel, messages, response_format:{type:'json_object'} }) });
+      if (!r.ok) throw new Error('OpenAI '+r.status+': '+(await r.text()).slice(0,200));
+      const j = await r.json();
+      return parseJSON(j?.choices?.[0]?.message?.content);
+    }
+    async function think(text){
+      const loc = local(text); if (loc) return { ...loc, source:'built-in' };
+      const ar = isAr(text);
+      const prov = S.prov === 'openai' ? (S.oKey ? 'openai' : (S.gKey ? 'gemini' : null)) : S.prov === 'gemini' ? (S.gKey ? 'gemini' : (S.oKey ? 'openai' : null)) : null;
+      if (!prov) return { reply: ar ? NO_AI_AR : NO_AI_EN, emotion:'sad', action:{type:'none'}, source:'built-in' };
+      if (!navigator.onLine) return { reply: ar ? 'مفيش نت دلوقتي، فمش هقدر أفكر. بس أقدر أتحرك وأعرّف نفسي.' : "There's no internet, so I can't think right now. I can still move and introduce myself.", emotion:'sad', action:{type:'none'}, source:'built-in' };
+      const res = prov === 'openai' ? await askOpenAI(text) : await askGemini(text);
+      return { ...res, source: prov };
+    }
+    let busy = false;
+    async function handle(text, from){
+      if (busy) return; busy = true;
+      Ears.stopAll(); Voice.stop(); wake();
+      setMode('thinking'); setMood('thinking'); say(text, null);
+      Remote.send({ t:'heard', text, from });
+      let res;
+      try { res = await think(text); }
+      catch(e){ console.warn(e); logR('AI error: '+e.message);
+        res = { reply: isAr(text) ? 'آسف، معرفتش أوصل لعقلي دلوقتي.' : "Sorry, I couldn't reach my brain right now.", emotion:'sad', action:{type:'none'}, source:'error', err:e.message }; }
+      if (res.reply){ history.push({role:'user', text}); history.push({role:'assistant', text:res.reply}); while (history.length > 16) history.shift(); }
+      setMode('speaking'); setMood(res.emotion || 'neutral'); say(text, res.reply);
+      Remote.send({ t:'reply', text:res.reply, emotion:res.emotion, action:res.action && res.action.type, source:res.source });
+      if (res.err) note('AI error: '+res.err.slice(0,140));
+      Body.action(res.action);
+      await Voice.speak(res.reply);
+      setMode('idle'); setMood(res.emotion === 'sleepy' ? 'sleepy' : 'neutral'); chirp('done');
+      if (res.sleep){ asleep = true; }
+      busy = false;
+      capTimer = setTimeout(()=>{ if (mode==='idle') cap.innerHTML=''; }, 6000);
+      Ears.resumeWake();
+      return res;
+    }
+    async function testAI(){
+      const prov = S.prov;
+      if (prov === 'none') return 'Provider is "None": only built-in answers.';
+      const t0 = performance.now();
+      const r = prov === 'openai' ? await askOpenAI('Say hello in one short sentence.') : await askGemini('Say hello in one short sentence.');
+      return 'OK in '+Math.round(performance.now()-t0)+' ms: "'+r.reply+'" ('+r.emotion+')';
+    }
+    return { handle, testAI, local, get busy(){ return busy; } };
+  })();
+
+  // =====================================================================
+  // CAMERA (shared with the website + face tracking)
+  // =====================================================================
+  const Cam = (() => {
+    const v = $('camv'); let stream = null, facing = 'user', detector = null, timer = null;
+    async function start(){
+      if (stream) return stream;
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('camera not available');
+      stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:facing, width:{ideal:1280}, height:{ideal:720} }, audio:false });
+      v.srcObject = stream; try { await v.play(); } catch(e){}
+      startTracking();
+      return stream;
+    }
+    function stop(){ clearInterval(timer); timer = null; if (stream) stream.getTracks().forEach(t=>t.stop()); stream = null; v.srcObject = null; }
+    async function flip(){ facing = facing === 'user' ? 'environment' : 'user'; const had = !!stream; stop(); if (had) await start(); return stream; }
+    function startTracking(){
+      clearInterval(timer);
+      if (!S.track || !('FaceDetector' in window) || facing !== 'user') return;
+      try { detector = detector || new window.FaceDetector({ fastMode:true, maxDetectedFaces:1 }); } catch(e){ return; }
+      timer = setInterval(async () => {
+        if (!stream || v.readyState < 2 || mode === 'thinking') return;
+        try { const f = await detector.detect(v); if (f && f[0]){ const b = f[0].boundingBox;
+          gazeT = { x: -((b.x + b.width/2)/v.videoWidth*2-1)*0.9, y: ((b.y + b.height/2)/v.videoHeight*2-1)*0.5 };
+          nextWander = performance.now() + 1500; if (asleep){ wake(); } } } catch(e){}
+      }, 300);
+    }
+    async function ensureForTracking(){ if (S.track && 'FaceDetector' in window && !stream){ try { await start(); } catch(e){} } }
+    return { start, stop, flip, ensureForTracking, startTracking, get stream(){ return stream; }, get facing(){ return facing; } };
+  })();
+
+  // =====================================================================
+  // REMOTE: WebRTC link to the BKR website (PeerJS signalling server)
+  // =====================================================================
+  const Remote = (() => {
+    let peer = null, conn = null, call = null, on = false, lastDrive = 0, driving = null, statusTimer = null, guard = null;
+    function chip(state, text){ $('remChip').hidden = !on; $('remDot').className = 'dot' + (state==='on'?' on':(state==='wait'?' mid':'')); $('remTxt').textContent = text; }
+    function loadLib(){ return window.Peer ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js'; s.onload = res; s.onerror = () => rej(new Error('could not load PeerJS (internet?)')); document.head.append(s); }); }
+    async function enable(){
+      on = true; chip('wait', 'Remote · starting…');
+      try { await loadLib(); } catch(e){ chip('off', 'Remote · '+e.message); return; }
+      try { peer && peer.destroy(); } catch(e){}
+      peer = new window.Peer('bkr-robot-'+S.room);
+      peer.on('open', () => chip('wait', 'Remote · code '+S.room+' · waiting'));
+      peer.on('error', e => { chip('off', 'Remote · '+(e.type==='unavailable-id' ? 'code busy, press New code' : e.type)); logR('remote error '+e.type); });
+      peer.on('disconnected', () => { if (on) { chip('wait', 'Remote · reconnecting'); try { peer.reconnect(); } catch(e){} } });
+      peer.on('connection', c => {
+        if (conn){ try { conn.close(); } catch(e){} }
+        conn = c;
+        c.on('open', async () => {
+          chip('on', 'Remote · viewer connected'); sysMsg('Someone opened the BKR website.', 2500);
+          push(); startCall();
+        });
+        c.on('data', onData);
+        c.on('close', () => { if (conn === c){ conn = null; stopDrive(); chip('wait', 'Remote · code '+S.room+' · waiting'); try { call && call.close(); } catch(e){} call = null; } });
+      });
+      clearInterval(statusTimer); statusTimer = setInterval(push, 1000);
+      clearInterval(guard); guard = setInterval(() => { if (driving && performance.now() - lastDrive > 500) stopDrive(); }, 100);
+    }
+    async function startCall(){
+      if (!conn) return;
+      try { const st = await Cam.start(); try { call && call.close(); } catch(e){} call = peer.call(conn.peer, st); }
+      catch(e){ send({ t:'event', text:'Camera error: '+e.message }); }
+    }
+    function disable(){ on = false; stopDrive(); clearInterval(statusTimer); clearInterval(guard); try { conn && conn.close(); } catch(e){} try { peer && peer.destroy(); } catch(e){} peer = conn = call = null; if (!S.track) Cam.stop(); chip('off',''); }
+    function send(o){ try { if (conn && conn.open) conn.send(o); } catch(e){} }
+    function event(text){ send({ t:'event', text }); }
+    let battery = null; try { navigator.getBattery && navigator.getBattery().then(b => battery = b); } catch(e){}
+    function push(){ if (!conn) return; send({ t:'status', ble:Body.state, dist:Body.dist, bodyMode:Body.mode, mood, mode, cam:Cam.facing, batt: battery ? Math.round(battery.level*100) : null, ai:S.prov, voice:Voice.engine() }); }
+    function stopDrive(){ if (driving){ driving = null; Body.send('S'); } }
+    async function onData(m){
+      if (!m || typeof m !== 'object') return;
+      switch (m.t){
+        case 'drive': {
+          const dir = ({F:'F',B:'B',L:'L',R:'R'})[m.dir]; if (!dir) return;
+          lastDrive = performance.now(); wake();
+          const spd = Math.max(20, Math.min(100, Number(m.spd)||S.speed));
+          if (driving !== dir+spd){ driving = dir+spd; Body.send(dir+spd); }
+          break; }
+        case 'stop': driving = null; Body.send('S'); break;
+        case 'arm': Body.send('A'+Math.round(m.l)+','+Math.round(m.r)); break;
+        case 'wave': Body.send('W'); break;
+        case 'auto': Body.send(m.on ? 'AUTO1' : 'AUTO0'); break;
+        case 'ask': if (m.text) Brain.handle(String(m.text).slice(0,300), 'remote'); break;
+        case 'say': if (m.text){ wake(); setMode('speaking'); say(null, String(m.text)); await Voice.speak(String(m.text).slice(0,300)); setMode('idle'); } break;
+        case 'cam': try { await Cam.flip(); startCall(); } catch(e){ event('Camera error: '+e.message); } break;
+        case 'ping': { const ms = await Body.probe(); send({ t:'pong', id:m.id, body:ms }); break; }
+      }
+    }
+    return { enable, disable, send, event, push, get on(){ return on; } };
+  })();
+
+  // =====================================================================
+  // TOUCH
+  // =====================================================================
+  let downX = 0, downY = 0, holdTimer = null, taps = [];
   function wake(){ lastTouch = performance.now(); if (asleep){ asleep = false; setMood('surprised', 900); chirp('surprised'); return true; } return false; }
   C.addEventListener('pointerdown', e => {
-    downAt = performance.now(); downX = e.clientX; downY = e.clientY;
-    gazeT = {x:(e.clientX/W*2-1)*0.9, y:(e.clientY/H*2-1)*0.6}; nextWander = downAt + 2500;
+    downX = e.clientX; downY = e.clientY;
+    gazeT = {x:(e.clientX/W*2-1)*0.9, y:(e.clientY/H*2-1)*0.6}; nextWander = performance.now() + 2500;
     holdTimer = setTimeout(()=>{ holdTimer = null; wake(); setMood('love', 2600); chirp('love'); }, 650);
   });
   C.addEventListener('pointerup', e => {
@@ -285,68 +826,87 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
     if (wake()) return;
     if (Math.hypot(dx,dy) > 60){ setMood('surprised', 1300); bounce = 1; chirp('surprised'); return; }
     const now = performance.now(); taps = taps.filter(x => now - x < 1600); taps.push(now);
-    if (taps.length >= 4){ setMood('angry', 2200); chirp('angry'); say(null, 'Hey! That tickles too much.'); speak('Hey! That tickles too much!'); taps = []; }
+    if (taps.length >= 4){ setMood('angry', 2200); chirp('angry'); const t = S.hear==='ar-EG' ? 'بس بقى! كده بتزغزغني.' : 'Hey! That tickles too much!'; say(null, t); Voice.speak(t); taps = []; }
     else { setMood('happy', 1500); bounce = 1; chirp('happy'); }
   });
 
-  // ---------- captions + demo conversation ----------
-  const cap = document.getElementById('cap');
-  function say(you, bkr){
-    if (!document.getElementById('subs').checked) { cap.innerHTML=''; return; }
-    cap.innerHTML = '';
-    if (you){ const p = document.createElement('p'); p.className='you'; p.innerHTML = '<b>YOU</b>'; p.append(you); cap.append(p); }
-    if (bkr){ const p = document.createElement('p'); p.innerHTML = '<b>BKR</b>'; p.append(bkr); cap.append(p); }
-  }
-  let timers = [];
-  function later(ms, fn){ timers.push(setTimeout(fn, ms)); }
-  function clearFlow(){ timers.forEach(clearTimeout); timers = []; }
-  function setMode(m){ mode = m; document.getElementById('micBtn').classList.toggle('live', m==='listening'); }
-  function showCmd(txt){ const c = document.getElementById('cmd'); c.textContent = '→ ESP32: ' + txt; c.classList.add('show'); later(1800, ()=>c.classList.remove('show')); }
-  function flow(question, answer, emotion, cmd){
-    clearFlow(); wake(); closeSheets();
-    setMode('listening'); setMood('listening'); chirp('listen'); say(null, 'Listening…');
-    later(1600, ()=> say(question, null));
-    later(2300, ()=>{ setMode('thinking'); setMood('thinking'); });
-    later(3600, ()=>{ setMode('speaking'); setMood(emotion); say(question, answer); if (cmd) showCmd(cmd); let ended=false; const fin=()=>{ if(ended) return; ended=true; setMode('idle'); setMood('neutral'); chirp('done'); }; speak(answer, fin); later(Math.max(2600, answer.length*90), fin); });
-  }
-  document.getElementById('sc1').onclick = ()=> flow("What's the temperature today?", "It's about 24 degrees in Assiut right now. Nice weather for a ride!", 'happy');
-  document.getElementById('sc2').onclick = ()=> flow('Come to me', "On my way!", 'happy', 'COME');
-  document.getElementById('sc3').onclick = ()=> flow('إزيك يا بكر؟', 'أنا تمام الحمد لله! إنت عامل إيه النهارده؟', 'love');
-  function voiceTest(t){ clearFlow(); closeSheets(); wake(); setMode('speaking'); setMood('happy'); say(null, t); speak(t, ()=>{ setMode('idle'); setMood('neutral'); }); later(Math.max(3000, t.length*90), ()=>{ if(mode==='speaking'){ setMode('idle'); setMood('neutral'); } }); }
-  document.getElementById('v1').onclick = ()=> voiceTest("Hi! I'm BKR, your robot friend. I was built by Mohamed and Ismail for ISEF!");
-  document.getElementById('v2').onclick = ()=> voiceTest('أهلًا! أنا بكر، صاحبك الروبوت. محمد وإسماعيل عملوني علشان مسابقة آيسف!');
-  document.getElementById('sc4').onclick = ()=>{ clearFlow(); closeSheets(); setMode('idle'); asleep = true; setMood('sleepy'); say(null, null); };
-  document.getElementById('micBtn').onclick = ()=>{ if (mode==='listening'){ clearFlow(); setMode('idle'); setMood('neutral'); say(null,null); } else { wake(); setMode('listening'); setMood('listening'); chirp('listen'); say(null, 'Listening… (design preview: the microphone is not connected yet)'); later(5000, ()=>{ if(mode==='listening'){ setMode('idle'); setMood('neutral'); say(null,null);} }); } };
+  // =====================================================================
+  // BUTTONS / SHEETS
+  // =====================================================================
+  $('micBtn').onclick = () => {
+    if (Ears.active){ Ears.stopAll(); setMode('idle'); setMood('neutral'); cap.innerHTML=''; Ears.resumeWake(); return; }
+    if (Brain.busy){ Voice.stop(); return; }
+    wake(); Ears.listenOnce();
+  };
+  function updLangChip(){ $('langChip').textContent = S.hear === 'ar-EG' ? 'عربي' : 'EN'; }
+  $('langChip').onclick = () => { S.hear = S.hear === 'ar-EG' ? 'en-US' : 'ar-EG'; $('hear').value = S.hear; saveS(); updLangChip(); sysMsg(S.hear==='ar-EG' ? 'هسمعك بالعربي.' : 'I will listen in English.', 1800); };
+  const toggleBle = () => Body.state === 'off' ? Body.connect() : Body.disconnect();
+  $('bleChip').onclick = toggleBle; $('connectBtn').onclick = toggleBle;
 
-  // ---------- sheets ----------
   const sheets = ['demo','settings'];
-  function closeSheets(){ sheets.forEach(id=>document.getElementById(id).classList.remove('open')); }
-  document.getElementById('demoBtn').onclick = ()=>{ closeSheets(); document.getElementById('demo').classList.add('open'); };
-  document.getElementById('setBtn').onclick = ()=>{ closeSheets(); document.getElementById('settings').classList.add('open'); };
+  function closeSheets(){ sheets.forEach(id=>$(id).classList.remove('open')); }
+  $('demoBtn').onclick = ()=>{ closeSheets(); $('demo').classList.add('open'); };
+  $('setBtn').onclick = ()=>{ closeSheets(); fillForm(); $('settings').classList.add('open'); };
   document.querySelectorAll('[data-close]').forEach(b=> b.onclick = closeSheets);
   function renderExprPills(){
-    const box = document.getElementById('exprs'); box.innerHTML = '';
-    Object.keys(EX).forEach(k=>{ const b = document.createElement('button'); b.className = 'pill' + (k===mood?' sel':''); b.textContent = k; b.onclick = ()=>{ clearFlow(); asleep=false; lastTouch=performance.now(); setMode(k==='listening'?'listening':(k==='thinking'?'thinking':'idle')); setMood(k); chirp(k==='angry'?'angry':'happy'); }; box.append(b); });
+    const box = $('exprs'); if (!box) return; box.innerHTML = '';
+    MOODS.forEach(k=>{ const b = document.createElement('button'); b.className = 'pill' + (k===mood?' sel':''); b.textContent = k; b.onclick = ()=>{ asleep=false; lastTouch=performance.now(); setMode(k==='listening'?'listening':(k==='thinking'?'thinking':'idle')); setMood(k); chirp(k==='angry'?'angry':'happy'); if (k==='listening'||k==='thinking') setTimeout(()=>{ if(mode===k){ setMode('idle'); setMood('neutral'); } }, 3000); }; box.append(b); });
   }
-  document.getElementById('connectBtn').onclick = (e)=>{ e.target.textContent = 'Searching…'; setTimeout(()=>{ e.target.textContent = 'Connect'; document.getElementById('saved').textContent = ''; say(null, 'Design preview: Bluetooth pairing comes with the ESP32 code.'); closeSheets(); }, 1200); };
-  // settings persistence (one viewer's convenience only)
-  const fields = ['lang','wake','subs','track','sleep','speed'];
-  try { const s = JSON.parse(localStorage.getItem('bkr-settings')||'{}'); fields.forEach(f=>{ const el=document.getElementById(f); if (f in s){ if (el.type==='checkbox') el.checked = s[f]; else el.value = s[f]; } }); } catch(e){}
-  document.getElementById('saveBtn').onclick = ()=>{ const s={}; fields.forEach(f=>{ const el=document.getElementById(f); s[f] = el.type==='checkbox'?el.checked:el.value; }); try{ localStorage.setItem('bkr-settings', JSON.stringify(s)); document.getElementById('saved').textContent='Saved on this phone'; }catch(e){ document.getElementById('saved').textContent='Could not save here'; } };
+  $('tIntroEn').onclick = () => { closeSheets(); Brain.handle('Introduce yourself', 'test'); };
+  $('tIntroAr').onclick = () => { closeSheets(); Brain.handle('عرّف نفسك', 'test'); };
+  $('tSleep').onclick = () => { closeSheets(); setMode('idle'); asleep = true; setMood('sleepy'); cap.innerHTML=''; };
+  document.querySelectorAll('[data-act]').forEach(b => b.onclick = () => { const t = b.dataset.act; Body.action({ type:t, seconds: (t==='left'||t==='right') ? 0.6 : 1 }); $('testOut').textContent = Body.state==='on' ? 'Sent: '+t : 'Robot body not connected. Tap "Robot body" at the top first.'; });
+  $('tLat').onclick = async () => {
+    const out = $('testOut');
+    if (Body.state !== 'on'){ out.textContent = 'Connect the robot body first.'; return; }
+    out.textContent = 'Measuring… keep the phone at the distance you want to test.';
+    const v = []; let lost = 0;
+    for (let i=0;i<50;i++){ const ms = await Body.probe(); if (ms === null) lost++; else v.push(ms); await sleepMs(80); }
+    if (!v.length){ out.textContent = 'No replies from the ESP32.'; return; }
+    const mean = v.reduce((a,b)=>a+b,0)/v.length, sd = Math.sqrt(v.reduce((a,b)=>a+(b-mean)**2,0)/Math.max(1,v.length-1));
+    const sorted = [...v].sort((a,b)=>a-b);
+    out.textContent = 'Round trip phone → ESP32 → phone, n = '+v.length+' (lost '+lost+')\nmean '+mean.toFixed(1)+' ms · SD '+sd.toFixed(1)+' ms\nmin '+sorted[0].toFixed(1)+' · median '+sorted[Math.floor(v.length/2)].toFixed(1)+' · max '+sorted[v.length-1].toFixed(1)+' ms\nOne-way command latency ≈ mean / 2 = '+(mean/2).toFixed(1)+' ms';
+    logR('latency test: mean '+mean.toFixed(1)+' ms SD '+sd.toFixed(1)+' n='+v.length);
+  };
+  $('tLog').onclick = () => { $('testOut').textContent = robotLog.slice(-40).join('\n') || 'No robot messages yet.'; };
 
-  // ---------- start ----------
-  const start = document.getElementById('start');
+  $('saveBtn').onclick = () => {
+    const wasRem = S.remOn, wasAvoid = S.avoid; readForm();
+    $('saved').textContent = saveS() ? 'Saved on this phone' : 'Could not save here';
+    updLangChip();
+    if (S.remOn !== wasRem){ S.remOn ? Remote.enable() : Remote.disable(); }
+    if (S.avoid !== wasAvoid) Body.send(S.avoid ? 'AVOID1' : 'AVOID0');
+    if (S.track) Cam.ensureForTracking(); else if (!S.remOn) Cam.stop();
+    Ears.stopAll(); Ears.resumeWake();
+  };
+  $('newCode').onclick = () => { S.room = String(1000 + Math.floor(Math.random()*9000)); saveS(); $('roomCode').textContent = S.room; if (S.remOn) Remote.enable(); };
+  $('testAI').onclick = async () => { readForm(); saveS(); $('aiOut').textContent = 'Testing…'; try { $('aiOut').textContent = await Brain.testAI(); } catch(e){ $('aiOut').textContent = 'Failed: '+e.message.slice(0,160); } };
+  const vTest = async (t) => { readForm(); saveS(); closeSheets(); wake(); setMode('speaking'); setMood('happy'); say(null, t); await Voice.speak(t); setMode('idle'); setMood('neutral'); };
+  $('vEn').onclick = () => vTest("Hello! I am BKR, your robot friend.");
+  $('vAr').onclick = () => vTest('أهلًا! أنا بكر، صاحبك الروبوت.');
+
+  // =====================================================================
+  // START
+  // =====================================================================
+  const start = $('start');
   function go(){
     start.remove();
     try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){}
     try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
+    try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(()=>{}); } catch(e){}
+    try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){}
     setMood('surprised', 900); chirp('wake'); bounce = 1;
-    setTimeout(()=>{ say(null, "Hi! I'm BKR. Tap me, hold me, or say \"Hey BKR\"."); setMode('speaking'); speak("Hi! I'm BKR. Nice to meet you!", ()=>setMode('idle')); setTimeout(()=>{ if(mode==='speaking') setMode('idle'); }, 4000); }, 700);
-    setTimeout(()=> say(null, null), 5200);
+    const hi = S.hear === 'ar-EG' ? 'أهلًا! أنا بكر. دوس على الميكروفون وكلمني.' : "Hi! I'm BKR. Tap the mic and talk to me.";
+    setTimeout(async ()=>{ setMode('speaking'); say(null, hi); await Voice.speak(hi); setMode('idle'); capTimer = setTimeout(()=>{ if(mode==='idle') cap.innerHTML=''; }, 2500); Ears.resumeWake(); }, 700);
+    if (S.remOn) Remote.enable();
+    Cam.ensureForTracking();
+    if (!Ears.supported()) setTimeout(()=>sysMsg('This browser cannot hear speech. Use Chrome on Android.', 6000), 3000);
   }
   start.addEventListener('click', go); start.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') go(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible'){ try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){} } });
   renderExprPills();
   requestAnimationFrame(draw);
+  window.__BKR = { Brain, Body, Voice, Ears, Remote, S };   // for debugging in Chrome devtools
 })();
 </script>
 <script>try{ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){}</script>

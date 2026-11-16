@@ -84,129 +84,238 @@ button:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
 .log b{color:var(--mustard);font-weight:600}
 .banner{max-width:1280px;margin:12px auto 0;padding:0 20px}
 .banner p{margin:0;font-size:13px;color:var(--muted);border-left:3px solid var(--mustard);padding:6px 10px;background:var(--panel)}
+
+/* ---- phone layout (portrait): camera stays pinned on top, drive pad right under it ---- */
+button{touch-action:manipulation}
+@media (max-width:900px){
+  header{padding:10px 12px;gap:8px}
+  .logo{font-size:26px}
+  .chips{margin-left:0;width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{font-size:11px;padding:4px 9px;white-space:nowrap;flex:none}
+  .banner{padding:0 12px;margin-top:8px}.banner p{font-size:12px}
+  main{padding:10px 12px 24px;gap:12px}
+  .side{display:contents}
+  .camc{order:1;position:sticky;top:0;z-index:5;padding:8px;box-shadow:0 8px 18px rgba(0,0,0,.55)}
+  .camc .ttl{display:none}
+  .drive{order:2}.talk{order:3}.armsc{order:4}.logc{order:5}
+  .camfoot{gap:6px;margin-top:8px}
+  .camfoot .btn{flex:1;padding:8px 4px;font-size:12.5px}
+  .camc .note{display:none}
+  .hud{font-size:10px}
+  .ttl{font-size:18px;margin-bottom:8px}
+  .pad{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,62px);max-width:250px;margin:0 auto}
+  .gauge{height:56px}
+  .micbig{width:80px;height:80px}
+  .msg{max-width:92%;font-size:14px}
+  .talk .ttl{justify-content:center}.talk .ttl .m,.logc .ttl .m{display:none}
+}
+/* ---- phone turned sideways: camera left, controls scroll on the right ---- */
+@media (orientation:landscape) and (max-height:520px){
+  header{padding:6px 12px}.logo{font-size:22px}.logo small{display:none}
+  .chips{width:auto;margin-left:auto}
+  .banner{display:none}
+  main{grid-template-columns:minmax(0,1fr) 270px;padding:8px 10px;gap:10px;align-items:start}
+  .side{display:flex;gap:10px;max-height:calc(100vh - 60px);overflow:auto}
+  .camc{order:0;position:sticky;top:8px;box-shadow:none}
+  .side{order:1}.talk{order:2}.logc{order:3}
+  .camc .cam{max-height:calc(100vh - 120px);aspect-ratio:auto;height:calc(100vh - 120px)}
+  .camc .cam canvas{object-fit:cover}
+  .pad{grid-template-rows:repeat(3,54px)}
+}
 @media (prefers-reduced-motion:reduce){.rec,.micbig.live{animation:none}}
+</style>
+<style>
+/* ---- v2: live link to the robot phone ---- */
+.cam video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
+.camwait{position:absolute;inset:0;display:grid;place-items:end center;padding-bottom:22%!important;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px;padding:20px}
+.join{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.join input{font-family:var(--mono);font-size:18px;letter-spacing:4px;width:120px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--mustard);text-align:center}
+.chip i.off{background:var(--rust)}
+.ask{display:flex;gap:8px;margin-top:10px}
+.ask input{flex:1;font-family:var(--body);font-size:15px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--cream)}
+.k:disabled,.btn:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">BKR<small>REMOTE CONTROL</small></div>
+  <div class="join"><label for="code" class="note">Robot code</label><input id="code" inputmode="numeric" maxlength="4" placeholder="0000" aria-label="Robot code"><button class="btn hl" id="join">Connect</button></div>
   <div class="chips">
-    <span class="chip"><i></i>Robot online</span>
-    <span class="chip"><i class="warn"></i>Battery 72%</span>
-    <span class="chip">Latency <span id="lat">220</span> ms</span>
-    <span class="chip">Phone · Galaxy A56</span>
+    <span class="chip"><i class="off" id="cLink"></i><span id="tLink">Phone · offline</span></span>
+    <span class="chip"><i class="off" id="cBody"></i><span id="tBody">Robot body · –</span></span>
+    <span class="chip">Latency <span id="lat">–</span></span>
+    <span class="chip">Distance <span id="dist">–</span></span>
+    <span class="chip">Phone battery <span id="batt">–</span></span>
   </div>
 </header>
-<div class="banner"><p>Design preview: the camera, robot status and replies below are sample data until BKR's app and ESP32 are connected.</p></div>
+<div class="banner"><p id="banner">Open the BKR app on the robot phone, turn on <b>Settings → Share camera &amp; allow remote control</b>, then type the 4-digit robot code here and press Connect.</p></div>
 
 <main>
-  <section class="card">
+  <section class="card camc">
     <h2 class="ttl">Live camera <span class="m" id="clock">--:--:--</span></h2>
     <div class="cam">
-      <canvas id="cam" width="960" height="540" aria-label="Live camera from BKR (sample view)" role="img"></canvas>
+      <video id="vid" autoplay playsinline muted></video>
+      <div class="camwait" id="camWait">No video yet · connect to the robot</div>
       <div class="hud">
-        <div class="tl"><span class="rec"></span><span>LIVE · BKR front camera</span></div>
+        <div class="tl"><span class="rec" id="recDot" style="display:none"></span><span id="hudLive">OFFLINE</span></div>
         <div class="tr" id="hudCmd">IDLE</div>
         <div class="cross"></div>
-        <div class="bl">720p · 24 fps · Wi-Fi via phone</div>
+        <div class="bl" id="hudRes">–</div>
       </div>
     </div>
     <div class="camfoot">
-      <button class="btn" id="snap">Take photo</button>
-      <button class="btn" id="flip">Switch camera</button>
-      <button class="btn" id="lookme">Find a face</button>
+      <button class="btn" id="snap" disabled>Take photo</button>
+      <button class="btn" id="flip" disabled>Switch camera</button>
+      <button class="btn" id="autoBtn" disabled>Auto mode: off</button>
       <span class="note" id="camNote">Keyboard: arrow keys drive, space stops.</span>
     </div>
   </section>
 
   <aside class="side">
-    <section class="card">
+    <section class="card drive">
       <h2 class="ttl">Drive <span class="m">hold to move</span></h2>
       <div class="pad">
         <span></span>
-        <button class="k" data-dir="FORWARD" aria-label="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        <button class="k" data-dir="F" aria-label="Forward" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
         <span></span>
-        <button class="k" data-dir="LEFT" aria-label="Turn left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-        <button class="k stop" data-dir="STOP" aria-label="Stop">STOP</button>
-        <button class="k" data-dir="RIGHT" aria-label="Turn right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+        <button class="k" data-dir="L" aria-label="Turn left" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <button class="k stop" data-dir="S" aria-label="Stop" disabled>STOP</button>
+        <button class="k" data-dir="R" aria-label="Turn right" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
         <span></span>
-        <button class="k" data-dir="BACKWARD" aria-label="Backward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></button>
+        <button class="k" data-dir="B" aria-label="Backward" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></button>
         <span></span>
       </div>
-      <div class="spd"><label for="spd">Speed</label><input id="spd" type="range" min="20" max="100" value="60"><output id="spdv">60%</output></div>
+      <div class="spd"><label for="spd">Speed</label><input id="spd" type="range" min="30" max="100" value="60"><output id="spdv">60%</output></div>
     </section>
 
-    <section class="card">
+    <section class="card armsc">
       <h2 class="ttl">Arms <span class="m">0° down · 180° up</span></h2>
       <div class="arms">
-        <div class="arm"><h3>Left arm</h3><canvas class="gauge" id="gL" width="220" height="140" aria-hidden="true"></canvas><span class="ang" id="aL">30°</span><div class="ab"><button class="btn" data-arm="L" data-d="1">Up</button><button class="btn" data-arm="L" data-d="-1">Down</button></div></div>
-        <div class="arm"><h3>Right arm</h3><canvas class="gauge" id="gR" width="220" height="140" aria-hidden="true"></canvas><span class="ang" id="aR">30°</span><div class="ab"><button class="btn" data-arm="R" data-d="1">Up</button><button class="btn" data-arm="R" data-d="-1">Down</button></div></div>
+        <div class="arm"><h3>Left arm</h3><canvas class="gauge" id="gL" width="220" height="140" aria-hidden="true"></canvas><span class="ang" id="aL">90°</span><div class="ab"><button class="btn" data-arm="L" data-d="1" disabled>Up</button><button class="btn" data-arm="L" data-d="-1" disabled>Down</button></div></div>
+        <div class="arm"><h3>Right arm</h3><canvas class="gauge" id="gR" width="220" height="140" aria-hidden="true"></canvas><span class="ang" id="aR">90°</span><div class="ab"><button class="btn" data-arm="R" data-d="1" disabled>Up</button><button class="btn" data-arm="R" data-d="-1" disabled>Down</button></div></div>
       </div>
-      <div class="camfoot"><button class="btn" id="bothUp">Both up · wave</button><button class="btn" id="bothDown">Both down</button></div>
+      <div class="camfoot"><button class="btn" id="bothUp" disabled>Wave</button><button class="btn" id="bothDown" disabled>Both down</button></div>
     </section>
   </aside>
 
   <section class="card talk">
-    <button class="micbig" id="mic" aria-label="Hold to talk to BKR"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+    <button class="micbig" id="mic" aria-label="Talk to BKR" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     <div>
-      <h2 class="ttl" style="margin-bottom:8px">Talk to BKR <span class="m" id="micState">tap the mic, speak, tap again</span></h2>
-      <div class="conv" id="conv">
-        <div class="msg you"><span class="who">YOU · 10:42</span>Hi BKR, is anyone at home?</div>
-        <div class="msg bkr"><span class="who">BKR · 10:42</span>I can see the living room. Nobody is here right now, and the door is closed. <button class="play" data-say="I can see the living room. Nobody is here right now, and the door is closed.">▶ Play</button></div>
-      </div>
+      <h2 class="ttl" style="margin-bottom:8px">Talk to BKR <span class="m" id="micState">type or tap the mic · BKR answers on the robot</span></h2>
+      <div class="conv" id="conv"></div>
+      <div class="ask"><input id="askIn" placeholder="Ask BKR something… / اسأل بكر" dir="auto" disabled><button class="btn hl" id="askBtn" disabled>Send</button><button class="btn" id="sayBtn" disabled title="BKR says your text out loud">Say it</button></div>
     </div>
   </section>
 
-  <section class="card" style="grid-column:1/-1">
-    <h2 class="ttl">Command log <span class="m">what the phone sends to the ESP32</span></h2>
+  <section class="card logc" style="grid-column:1/-1">
+    <h2 class="ttl">Log <span class="m">commands sent · events from the robot</span></h2>
     <div class="log" id="log"></div>
   </section>
 </main>
 
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 (() => {
+  'use strict';
   const $ = id => document.getElementById(id);
-  const log = (cmd, extra='') => { const d = new Date(); const row = document.createElement('div'); row.innerHTML = '<span>'+d.toLocaleTimeString()+'</span> → <b>'+cmd+'</b> '+extra; $('log').prepend(row); while ($('log').children.length > 30) $('log').lastChild.remove(); $('hudCmd').textContent = cmd; };
-  log('CONNECTED', 'robot online (sample)');
+  const log = (cmd, extra='') => { const row = document.createElement('div'); row.innerHTML = '<span>'+new Date().toLocaleTimeString()+'</span> '; const b = document.createElement('b'); b.textContent = cmd; row.append(b, ' '+extra); $('log').prepend(row); while ($('log').children.length > 60) $('log').lastChild.remove(); };
+  setInterval(()=>{ $('clock').textContent = new Date().toLocaleTimeString(); }, 1000);
 
-  // ---- fake camera feed (sample room drawn on canvas) ----
-  const cv = $('cam'), c = cv.getContext('2d'); let camX = 0, camVX = 0, camZ = 0, camVZ = 0, flipped = false;
-  function room(t){
-    const W = cv.width, H = cv.height; camX += camVX; camZ = Math.max(-80, Math.min(160, camZ + camVZ));
-    c.fillStyle = '#1C1914'; c.fillRect(0,0,W,H);
-    const hz = H*0.55; // floor
-    const fg = c.createLinearGradient(0,hz,0,H); fg.addColorStop(0,'#2B251C'); fg.addColorStop(1,'#46392A'); c.fillStyle = fg; c.fillRect(0,hz,W,H-hz);
-    c.strokeStyle = 'rgba(244,236,218,.06)'; for (let i=-20;i<20;i++){ c.beginPath(); c.moveTo(W/2 + (i*80 - camX%80)*(1+camZ/300), hz); c.lineTo(W/2 + (i*80 - camX%80)*4, H); c.stroke(); }
-    const s = 1 + camZ/260, off = -camX*0.6;
-    // wall items: window, sofa, lamp
-    c.fillStyle = '#3B5A6E'; c.fillRect(W*0.12*s + off, H*0.14, W*0.22*s, H*0.26); c.strokeStyle = '#8E7B5E'; c.lineWidth = 6; c.strokeRect(W*0.12*s + off, H*0.14, W*0.22*s, H*0.26);
-    c.fillStyle = '#6B3E22'; c.fillRect(W*0.45*s + off, hz - H*0.12*s, W*0.36*s, H*0.16*s); c.fillStyle = '#7E4A2A'; c.fillRect(W*0.45*s + off, hz - H*0.2*s, W*0.36*s, H*0.09*s);
-    c.fillStyle = '#E9A91B'; c.beginPath(); c.arc(W*0.9*s + off, H*0.28, 26*s, 0, Math.PI*2); c.fill(); c.fillStyle = '#5A4A33'; c.fillRect(W*0.9*s + off - 3, H*0.28, 6, hz - H*0.28);
-    // noise + vignette
-    const vg = c.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,W*0.7); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.55)'); c.fillStyle = vg; c.fillRect(0,0,W,H);
-    for (let i=0;i<220;i++){ c.fillStyle = 'rgba(255,255,255,'+(Math.random()*0.05)+')'; c.fillRect(Math.random()*W, Math.random()*H, 2, 2); }
-    if (flipped){ c.fillStyle='rgba(14,12,9,.6)'; c.fillRect(0,0,W,H); c.fillStyle='#F4ECDA'; c.font='600 28px "IBM Plex Mono"'; c.textAlign='center'; c.fillText('Back camera (sample)', W/2, H/2+70); c.textAlign='left'; }
-    requestAnimationFrame(room);
+  // ---------------- connection to the robot phone (WebRTC via PeerJS) ----------------
+  let peer = null, conn = null, linked = false, autoOn = false;
+  const controls = () => document.querySelectorAll('.k,[data-arm],#bothUp,#bothDown,#snap,#flip,#autoBtn,#mic,#askIn,#askBtn,#sayBtn');
+  function setLinked(on){
+    linked = on; controls().forEach(el => el.disabled = !on);
+    $('cLink').className = on ? '' : 'off'; $('tLink').textContent = on ? 'Phone · connected' : 'Phone · offline';
+    if (!on){ $('cBody').className = 'off'; $('tBody').textContent = 'Robot body · –'; $('lat').textContent = '–'; $('hudLive').textContent = 'OFFLINE'; $('recDot').style.display = 'none'; }
   }
-  requestAnimationFrame(room);
-  setInterval(()=>{ $('clock').textContent = new Date().toLocaleTimeString(); $('lat').textContent = 190 + Math.round(Math.random()*60); }, 1000);
+  setLinked(false);
+  try { const c = localStorage.getItem('bkr-code'); if (c) $('code').value = c; } catch(e){}
 
-  // ---- drive (hold to move, release stops) ----
-  const motion = {FORWARD:[0,2.2], BACKWARD:[0,-2.2], LEFT:[-6,0], RIGHT:[6,0], STOP:[0,0]};
-  let active = null;
-  function start(dir, el){ if (active === dir) return; active = dir; document.querySelectorAll('.k').forEach(k=>k.classList.toggle('on', k===el)); const m = motion[dir]; const sp = $('spd').value/60; camVX = m[0]*sp; camVZ = m[1]*sp; log(dir, dir==='STOP'?'':'speed '+$('spd').value+'%'); }
-  function stop(){ if (!active || active==='STOP'){ document.querySelectorAll('.k').forEach(k=>k.classList.remove('on')); active=null; return; } active = null; camVX = 0; camVZ = 0; document.querySelectorAll('.k').forEach(k=>k.classList.remove('on')); log('STOP', 'released'); }
+  function join(){
+    const code = $('code').value.trim();
+    if (!/^\d{4}$/.test(code)){ $('banner').textContent = 'Type the 4-digit code shown in the BKR app (Settings → Remote control website).'; return; }
+    if (!window.Peer){ $('banner').textContent = 'Could not load the connection library. Check the internet connection and reload.'; return; }
+    try { localStorage.setItem('bkr-code', code); } catch(e){}
+    try { peer && peer.destroy(); } catch(e){}
+    $('banner').textContent = 'Connecting to robot '+code+'…';
+    peer = new Peer();
+    peer.on('open', () => {
+      conn = peer.connect('bkr-robot-'+code, { reliable:true });
+      conn.on('open', () => { setLinked(true); $('banner').textContent = 'Connected to BKR '+code+'. Hold an arrow to drive. Releasing the button stops the robot.'; log('CONNECTED', 'robot '+code); });
+      conn.on('data', onData);
+      conn.on('close', () => { setLinked(false); $('banner').textContent = 'The robot disconnected. Press Connect to try again.'; log('DISCONNECTED'); });
+      conn.on('error', e => log('ERROR', e.message||e.type));
+      setTimeout(() => { if (!linked) $('banner').textContent = 'No answer from robot '+code+'. Check that the code is right, the app is open, and remote control is on. Phone and computer on the same Wi-Fi works best.'; }, 9000);
+    });
+    peer.on('call', call => {
+      call.answer();
+      call.on('stream', st => { const v = $('vid'); v.srcObject = st; v.play().catch(()=>{}); $('camWait').style.display = 'none'; $('hudLive').textContent = 'LIVE · BKR camera'; $('recDot').style.display = '';
+        const tr = st.getVideoTracks()[0]; const upd = () => { const s = tr && tr.getSettings ? tr.getSettings() : {}; $('hudRes').textContent = (v.videoWidth||s.width||'?')+'×'+(v.videoHeight||s.height||'?')+' · '+(s.frameRate ? Math.round(s.frameRate)+' fps' : 'WebRTC'); }; v.onloadedmetadata = upd; setTimeout(upd, 1500); });
+      call.on('close', () => { $('camWait').style.display = ''; $('camWait').textContent = 'Camera stopped'; });
+    });
+    peer.on('error', e => { $('banner').textContent = e.type === 'peer-unavailable' ? 'Robot '+code+' was not found. Is the BKR app open with remote control turned on?' : 'Connection error: '+e.type; log('ERROR', e.type); });
+  }
+  $('join').onclick = join;
+  $('code').addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
+  function send(o){ if (conn && conn.open){ conn.send(o); return true; } return false; }
+
+  // ---------------- messages from the robot phone ----------------
+  const pings = new Map(); let pingId = 0;
+  function onData(m){
+    if (!m || typeof m !== 'object') return;
+    if (m.t === 'status'){
+      const on = m.ble === 'on';
+      $('cBody').className = on ? '' : (m.ble === 'off' ? 'off' : 'warn');
+      $('tBody').textContent = 'Robot body · ' + ({on:'connected', off:'not connected', connecting:'connecting', reconnecting:'reconnecting'}[m.ble] || m.ble);
+      $('dist').textContent = on && m.dist >= 0 ? m.dist+' cm' : (on ? 'clear' : '–');
+      $('batt').textContent = m.batt != null ? m.batt+'%' : '–';
+      if (m.bodyMode){ autoOn = m.bodyMode === 'AUTO' || m.bodyMode === 'AVOID'; $('autoBtn').textContent = 'Auto mode: '+(autoOn ? 'on' : 'off'); }
+    } else if (m.t === 'pong'){
+      const t0 = pings.get(m.id); if (t0 == null) return; pings.delete(m.id);
+      const rtt = performance.now() - t0;
+      $('lat').textContent = m.body != null ? Math.round(rtt)+' ms (to ESP32)' : Math.round(rtt)+' ms (to phone)';
+    } else if (m.t === 'heard'){
+      if (m.from !== 'remote') add('you', '🎤 ' + m.text);
+    } else if (m.t === 'reply'){
+      add('bkr', m.text); if (m.action && m.action !== 'none') log('BKR ACTION', m.action);
+    } else if (m.t === 'event'){
+      log('ROBOT', m.text);
+    }
+  }
+  setInterval(() => { if (!linked) return; const id = ++pingId; pings.set(id, performance.now()); send({ t:'ping', id }); if (pings.size > 10) pings.delete(pings.keys().next().value); }, 2000);
+
+  // ---------------- drive: hold to move, release stops ----------------
+  let active = null, held = null;
+  function startDrive(dir, el){
+    if (!linked) return;
+    document.querySelectorAll('.k').forEach(k=>k.classList.toggle('on', k===el));
+    if (dir === 'S'){ stopDrive(true); return; }
+    active = dir; const spd = Number($('spd').value);
+    const names = {F:'FORWARD',B:'BACKWARD',L:'LEFT',R:'RIGHT'};
+    send({ t:'drive', dir, spd }); log(names[dir], 'speed '+spd+'%'); $('hudCmd').textContent = names[dir];
+    clearInterval(held); held = setInterval(() => { if (active) send({ t:'drive', dir:active, spd:Number($('spd').value) }); }, 150);   // keep-alive: robot stops 0.5 s after this ends
+  }
+  function stopDrive(explicit){
+    clearInterval(held); held = null;
+    if (active || explicit){ send({ t:'stop' }); log('STOP', explicit ? '' : 'released'); }
+    active = null; $('hudCmd').textContent = 'IDLE';
+    document.querySelectorAll('.k').forEach(k=>k.classList.remove('on'));
+  }
   document.querySelectorAll('.k').forEach(k => {
-    k.addEventListener('pointerdown', e => { e.preventDefault(); k.setPointerCapture(e.pointerId); start(k.dataset.dir, k); if (k.dataset.dir==='STOP') setTimeout(stop, 250); });
-    k.addEventListener('pointerup', stop); k.addEventListener('pointercancel', stop);
+    k.addEventListener('pointerdown', e => { e.preventDefault(); k.setPointerCapture(e.pointerId); startDrive(k.dataset.dir, k); });
+    k.addEventListener('pointerup', () => stopDrive(false)); k.addEventListener('pointercancel', () => stopDrive(false)); k.addEventListener('lostpointercapture', () => stopDrive(false));
   });
-  const keys = {ArrowUp:'FORWARD', ArrowDown:'BACKWARD', ArrowLeft:'LEFT', ArrowRight:'RIGHT', ' ':'STOP'};
-  addEventListener('keydown', e => { const d = keys[e.key]; if (!d || e.repeat) return; e.preventDefault(); start(d, document.querySelector('.k[data-dir="'+d+'"]')); if (d==='STOP') setTimeout(stop, 250); });
-  addEventListener('keyup', e => { if (keys[e.key]) stop(); });
+  const keys = {ArrowUp:'F', ArrowDown:'B', ArrowLeft:'L', ArrowRight:'R', ' ':'S'};
+  addEventListener('keydown', e => { if (document.activeElement && document.activeElement.tagName === 'INPUT') return; const d = keys[e.key]; if (!d || e.repeat) return; e.preventDefault(); startDrive(d, document.querySelector('.k[data-dir="'+d+'"]')); });
+  addEventListener('keyup', e => { if (keys[e.key] && keys[e.key] !== 'S') stopDrive(false); });
+  addEventListener('blur', () => stopDrive(false));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopDrive(false); });
   $('spd').oninput = () => $('spdv').textContent = $('spd').value + '%';
 
-  // ---- arms ----
-  const ang = {L:30, R:30};
+  // ---------------- arms ----------------
+  const ang = {L:90, R:90};
   function gauge(side){
     const g = $('g'+side).getContext('2d'), W = 220, H = 140, cx = W/2, cy = H-18, r = 90;
     g.clearRect(0,0,W,H); g.lineWidth = 10; g.lineCap = 'round';
@@ -216,33 +325,39 @@ button:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
     g.fillStyle = '#F4ECDA'; g.beginPath(); g.arc(cx, cy, 8, 0, Math.PI*2); g.fill();
     $('a'+side).textContent = ang[side] + '°';
   }
-  function setArm(side, v){ ang[side] = Math.max(0, Math.min(180, v)); gauge(side); }
-  document.querySelectorAll('[data-arm]').forEach(b => b.onclick = () => { const s = b.dataset.arm; setArm(s, ang[s] + 30*Number(b.dataset.d)); log((s==='L'?'LEFT':'RIGHT')+'_ARM', ang[s]+'°'); });
-  $('bothUp').onclick = () => { setArm('L',170); setArm('R',170); log('ARMS_UP','wave'); let n=0; const iv = setInterval(()=>{ n++; setArm('R', n%2?120:170); if(n>5){clearInterval(iv); setArm('R',170);} }, 260); };
-  $('bothDown').onclick = () => { setArm('L',0); setArm('R',0); log('ARMS_DOWN'); };
+  function sendArms(){ send({ t:'arm', l:ang.L, r:ang.R }); }
+  document.querySelectorAll('[data-arm]').forEach(b => b.onclick = () => { const s = b.dataset.arm; ang[s] = Math.max(0, Math.min(180, ang[s] + 30*Number(b.dataset.d))); gauge(s); sendArms(); log((s==='L'?'LEFT':'RIGHT')+' ARM', ang[s]+'°'); });
+  $('bothUp').onclick = () => { send({ t:'wave' }); log('WAVE'); };
+  $('bothDown').onclick = () => { ang.L = 20; ang.R = 20; gauge('L'); gauge('R'); sendArms(); log('ARMS DOWN'); };
   gauge('L'); gauge('R');
 
-  // ---- camera buttons ----
-  $('snap').onclick = () => { log('PHOTO','saved to BKR album'); $('camNote').textContent = 'Photo taken (sample).'; };
-  $('flip').onclick = () => { flipped = !flipped; log('CAMERA', flipped?'back':'front'); };
-  $('lookme').onclick = () => { log('FIND_FACE','BKR turns to look for a person'); camVX = 3; setTimeout(()=>{ camVX = 0; log('STOP','face found'); }, 1400); };
-
-  // ---- talk (sample) ----
-  const samples = [
-    ['Where are you now, BKR?', "I'm in the living room, next to the sofa."],
-    ['Come to the kitchen', "Okay, heading to the kitchen now!"],
-    ['Raise your hands', "Hands up! Like this?"],
-  ]; let si = 0, live = false;
-  function speak(text){ try { const u = new SpeechSynthesisUtterance(text); u.lang = /[؀-ۿ]/.test(text) ? 'ar-EG' : 'en-US'; u.pitch = 1.3; u.rate = 1.02; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch(e){} }
-  function add(cls, text){ const m = document.createElement('div'); m.className = 'msg '+cls; const t = new Date().toTimeString().slice(0,5); m.innerHTML = '<span class="who">'+(cls==='you'?'YOU':'BKR')+' · '+t+'</span>'; m.append(text); if (cls==='bkr'){ const p = document.createElement('button'); p.className='play'; p.textContent='▶ Play'; p.onclick=()=>speak(text); m.append(p);} $('conv').append(m); $('conv').scrollTop = 1e6; }
-  $('mic').onclick = () => {
-    live = !live; $('mic').classList.toggle('live', live);
-    if (live){ $('micState').textContent = 'listening… tap again to send'; return; }
-    const [q, a] = samples[si++ % samples.length];
-    $('micState').textContent = 'sent · BKR is thinking…'; add('you', q); log('VOICE', '"'+q+'"');
-    setTimeout(()=>{ add('bkr', a); speak(a); $('micState').textContent = 'tap the mic, speak, tap again'; if (/hands/i.test(q)) $('bothUp').click(); if (/kitchen/i.test(q)){ log('FORWARD','by voice'); camVZ = 1.5; setTimeout(()=>{camVZ=0; log('STOP');}, 1500);} }, 1300);
+  // ---------------- camera buttons ----------------
+  $('snap').onclick = () => {
+    const v = $('vid'); if (!v.videoWidth){ $('camNote').textContent = 'No video yet.'; return; }
+    const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v, 0, 0);
+    const a = document.createElement('a'); a.download = 'BKR_photo_'+Date.now()+'.png'; a.href = c.toDataURL('image/png'); a.click();
+    log('PHOTO', 'saved to this computer');
   };
-  document.querySelectorAll('.play[data-say]').forEach(b => b.onclick = () => speak(b.dataset.say));
+  $('flip').onclick = () => { send({ t:'cam' }); log('CAMERA', 'switch'); $('camWait').style.display = ''; $('camWait').textContent = 'Switching camera…'; };
+  $('autoBtn').onclick = () => { autoOn = !autoOn; send({ t:'auto', on:autoOn }); log(autoOn ? 'AUTO ON' : 'AUTO OFF', 'obstacle avoidance'); $('autoBtn').textContent = 'Auto mode: '+(autoOn?'on':'off'); };
+
+  // ---------------- talk ----------------
+  function speak(text){ try { const u = new SpeechSynthesisUtterance(text); u.lang = /[؀-ۿ]/.test(text) ? 'ar-EG' : 'en-US'; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch(e){} }
+  function add(cls, text){ const m = document.createElement('div'); m.className = 'msg '+cls; m.dir = 'auto'; const t = new Date().toTimeString().slice(0,5); m.innerHTML = '<span class="who">'+(cls==='you'?'YOU':'BKR')+' · '+t+'</span>'; m.append(text); if (cls==='bkr'){ const p = document.createElement('button'); p.className='play'; p.textContent='▶ Play'; p.onclick=()=>speak(text); m.append(p);} $('conv').append(m); $('conv').scrollTop = 1e6; }
+  function ask(){ const t = $('askIn').value.trim(); if (!t) return; if (send({ t:'ask', text:t })){ add('you', t); log('ASK', '"'+t+'"'); $('askIn').value = ''; } }
+  $('askBtn').onclick = ask; $('askIn').addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+  $('sayBtn').onclick = () => { const t = $('askIn').value.trim(); if (!t) return; if (send({ t:'say', text:t })){ add('you', '🔊 '+t); log('SAY', '"'+t+'"'); $('askIn').value=''; } };
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; let rec = null;
+  $('mic').onclick = () => {
+    if (!SR){ $('micState').textContent = 'This browser cannot hear speech: type instead (Chrome works).'; return; }
+    if (rec){ rec.stop(); return; }
+    rec = new SR(); rec.lang = /[؀-ۿ]/.test($('askIn').value) ? 'ar-EG' : (navigator.language && navigator.language.startsWith('ar') ? 'ar-EG' : 'en-US'); rec.interimResults = true;
+    $('mic').classList.add('live'); $('micState').textContent = 'listening… ('+rec.lang+')';
+    rec.onresult = e => { let t=''; for (let i=0;i<e.results.length;i++) t += e.results[i][0].transcript; $('askIn').value = t; };
+    rec.onend = () => { $('mic').classList.remove('live'); rec = null; $('micState').textContent = 'type or tap the mic · BKR answers on the robot'; if ($('askIn').value.trim()) ask(); };
+    rec.onerror = e => { $('micState').textContent = 'mic: '+e.error; };
+    try { rec.start(); } catch(e){ rec = null; $('mic').classList.remove('live'); }
+  };
 })();
 </script>
 </body>
