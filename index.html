@@ -83,8 +83,11 @@ canvas#face{position:fixed;inset:0;width:100%;height:100%;display:block}
 .okc{color:#8FD694}
 .code{font-family:var(--mono);font-size:22px;letter-spacing:4px;color:var(--mustard)}
 video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;left:0;top:0}
+video#camv.show{width:150px;height:84px;opacity:1;left:auto;right:14px;top:48px;border-radius:10px;border:2px solid var(--mustard);object-fit:cover;background:#000;z-index:2}
+#earChip.on{border-color:var(--mustard);color:var(--mustard)}
 .cap p.sys{background:rgba(194,102,45,.18);border-color:rgba(194,102,45,.6);font-size:13px}
 </style>
+<style>.top .chip{white-space:nowrap}@media (max-width:1000px){#moodChip{display:none}}</style>
 </head>
 <body>
 <canvas id="face" aria-label="BKR robot face. Tap, hold or swipe to change his expression." role="img"></canvas>
@@ -92,9 +95,10 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
 
 <div class="top">
   <span class="logo">BKR</span>
-  <span class="chip btnchip" id="bleChip" role="button" tabindex="0" aria-label="Connect the robot body"><span class="dot" id="bleDot"></span><span id="bleTxt">Robot body · tap to connect</span></span>
-  <span class="chip btnchip" id="langChip" role="button" tabindex="0" aria-label="Switch listening language">EN</span>
-  <span class="chip" id="remChip" hidden><span class="dot" id="remDot"></span><span id="remTxt">Remote</span></span>
+  <span class="chip btnchip" id="bleChip" role="button" tabindex="0" aria-label="Connect the robot body"><span class="dot" id="bleDot"></span><span id="bleTxt">Robot · tap to connect</span></span>
+  <span class="chip btnchip" id="langChip" role="button" tabindex="0" aria-label="Switch listening language">🎤 English</span>
+  <span class="chip btnchip" id="remChip" role="button" tabindex="0" aria-label="Share the camera with the website"><span class="dot" id="remDot"></span><span id="remTxt">Camera · tap to share</span></span>
+  <span class="chip" id="earChip" hidden>👂 Listen / بكر</span>
   <span class="spacer"></span>
   <span class="chip" id="moodChip">mood · neutral</span>
 </div>
@@ -114,11 +118,24 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
   <div class="sh"><h2>Test</h2><span class="tag" id="testTag">real commands</span><button class="x" data-close aria-label="Close">×</button></div>
   <div class="sub">Expressions</div>
   <div class="grid" id="exprs"></div>
-  <div class="sub">Talk</div>
+  <div class="sub">Talk · works without internet</div>
   <div class="grid">
     <button class="pill" id="tIntroEn">Introduce yourself</button>
     <button class="pill" id="tIntroAr">عرّف نفسك</button>
+    <button class="pill" data-say="مين اللي عملك">مين عملك؟</button>
+    <button class="pill" data-say="بتعرف تعمل ايه">بتعرف تعمل إيه؟</button>
+    <button class="pill" data-say="الساعة كام">الساعة كام؟</button>
+    <button class="pill" data-say="what can you do">What can you do?</button>
     <button class="pill" id="tSleep">Sleep</button>
+  </div>
+  <div class="sub">Fun</div>
+  <div class="grid">
+    <button class="pill" data-say="شغل اغنية هابي بيرث داي">🎂 Happy Birthday</button>
+    <button class="pill" data-say="play twinkle twinkle little star">⭐ Twinkle</button>
+    <button class="pill" data-say="ارقص">🤖 Robot dance</button>
+    <button class="pill" data-say="stop the music">⏹ Stop music</button>
+    <button class="pill" data-say="قولي نكتة">😂 نكتة</button>
+    <button class="pill" data-say="tell me a joke">😂 Joke</button>
   </div>
   <div class="sub">Robot body (needs Bluetooth)</div>
   <div class="grid">
@@ -143,30 +160,35 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
 
 <!-- SETTINGS SHEET -->
 <section class="sheet" id="settings" aria-label="Settings">
-  <div class="sh"><h2>Settings</h2><button class="x" data-close aria-label="Close">×</button></div>
+  <div class="sh"><h2>Settings</h2><span class="tag">v2.4</span><button class="x" data-close aria-label="Close">×</button></div>
+
+  <div class="sub">Brain (AI) · step 1: paste a key</div>
+  <p class="note" style="margin-top:0">Free Gemini key: open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--mustard)">aistudio.google.com/apikey</a> → Create API key → copy → paste below → <b>Test AI</b>. ChatGPT key (paid): <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--mustard)">platform.openai.com/api-keys</a>.</p>
+  <div class="field"><label for="prov">AI provider</label><select id="prov"><option value="gemini">Google Gemini</option><option value="openai">OpenAI ChatGPT</option><option value="none">None (built-in answers only)</option></select></div>
+  <div class="field"><label for="gKey">Gemini API key</label><input id="gKey" type="password" autocomplete="off" placeholder="From aistudio.google.com · stays on this phone"></div>
+  <div class="field"><label for="gModel">Gemini model</label><input id="gModel" value="gemini-3.6-flash"></div>
+  <div class="field"><label for="oKey">OpenAI API key</label><input id="oKey" type="password" autocomplete="off" placeholder="From platform.openai.com · stays on this phone"></div>
+  <div class="field"><label for="oModel">OpenAI model</label><input id="oModel" value="gpt-4o-mini"></div>
+  <div class="inline"><button class="btn" id="testAI">Test AI</button><span class="note" id="aiOut"></span></div>
 
   <div class="sub">Robot body (ESP32 · Bluetooth)</div>
   <div class="row"><span id="bleRow">Not connected</span><button class="btn" id="connectBtn">Connect</button></div>
   <div class="row"><span>Motor speed</span><input type="range" id="speed" min="30" max="100" value="70" aria-label="Motor speed"></div>
   <div class="row"><span>Avoid obstacles when I drive forward</span><input type="checkbox" id="avoid" checked aria-label="Avoid obstacles"></div>
 
-  <div class="sub">Brain (AI)</div>
-  <div class="field"><label for="prov">AI provider</label><select id="prov"><option value="gemini">Google Gemini</option><option value="openai">OpenAI ChatGPT</option><option value="none">None (built-in answers only)</option></select></div>
-  <div class="field"><label for="gKey">Gemini API key</label><input id="gKey" type="password" autocomplete="off" placeholder="From aistudio.google.com · stays on this phone"></div>
-  <div class="field"><label for="gModel">Gemini model</label><input id="gModel" value="gemini-2.5-flash"></div>
-  <div class="field"><label for="oKey">OpenAI API key</label><input id="oKey" type="password" autocomplete="off" placeholder="From platform.openai.com · stays on this phone"></div>
-  <div class="field"><label for="oModel">OpenAI model</label><input id="oModel" value="gpt-4o-mini"></div>
-  <div class="inline"><button class="btn" id="testAI">Test AI</button><span class="note" id="aiOut"></span></div>
-
   <div class="sub">Voice</div>
+  <div class="field"><label for="arStyle">Arabic replies</label><select id="arStyle"><option value="egy">Egyptian Arabic (recommended)</option><option value="fusha">Modern Standard Arabic (فصحى)</option></select></div>
+  <div class="field"><label for="vname">Robot voice (one voice for Arabic and English)</label><select id="vname"><option>Puck</option><option>Charon</option><option>Fenrir</option><option>Orus</option><option>Kore</option></select></div>
   <div class="field"><label for="veng">Robot voice engine</label><select id="veng"><option value="auto">Automatic (AI voice if a key is set)</option><option value="openai">OpenAI voice + robot effect</option><option value="gemini">Gemini voice + robot effect</option><option value="phone">Phone voice (offline, less robotic)</option></select></div>
   <div class="row"><span>Robot effect</span><input type="range" id="fx" min="0" max="100" value="70" aria-label="Robot effect strength"></div>
   <div class="inline"><button class="btn" id="vEn">Test English</button><button class="btn" id="vAr">Test عربي</button></div>
+  <div class="inline" style="margin-top:10px"><button class="btn" id="prepVoice">Save voice for offline use</button></div>
+  <p class="note" id="prepOut">Do this once with internet: built-in answers (intro, jokes, moves…) then speak in the same robot voice without internet. Takes about 3–5 minutes.</p>
   <div class="field" style="margin-top:12px"><label for="hear">I talk to BKR in</label><select id="hear"><option value="en-US">English</option><option value="ar-EG">Egyptian Arabic</option></select></div>
-  <div class="row"><span>Always listening for the wake word</span><input type="checkbox" id="wakeOn" aria-label="Wake word"></div>
-  <div class="field"><label for="wake">Wake words (comma separated)</label><input id="wake" value="Hey BKR, Listen to me, بكر, يا بكر"></div>
+  <div class="row"><span>Hands-free: start listening when I say “Listen” (English) or “بكر” (Arabic)</span><input type="checkbox" id="wakeOn" aria-label="Wake word"></div>
+  <div class="field"><label for="wake">Extra wake words (optional, comma separated)</label><input id="wake" value=""></div>
 
-  <div class="sub">Remote control website</div>
+  <div class="sub">Remote control website · camera</div>
   <div class="row"><span>Robot code <span class="code" id="roomCode">----</span></span><button class="btn" id="newCode">New code</button></div>
   <div class="row"><span>Share camera &amp; allow remote control</span><input type="checkbox" id="remOn" aria-label="Allow remote control"></div>
   <p class="note">Open the BKR website, type this code, press Connect. Works best when the phone and the computer use the same Wi-Fi or hotspot.</p>
@@ -182,7 +204,7 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
 <div id="start" role="button" tabindex="0" aria-label="Wake BKR">
   <div class="big">BKR</div>
   <div class="t">Tap to wake BKR</div>
-  <div class="s">Put the phone on the robot · landscape works best</div>
+  <div class="s">Put the phone on the robot · landscape · version 2.4</div>
 </div>
 <script>
 (() => {
@@ -197,17 +219,20 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
   // =====================================================================
   // SETTINGS (saved in this phone's browser only)
   // =====================================================================
-  const DEF = { prov:'gemini', gKey:'', gModel:'gemini-2.5-flash', oKey:'', oModel:'gpt-4o-mini', veng:'auto', fx:70,
-    hear:'en-US', wakeOn:false, wake:'Hey BKR, Listen to me, بكر, يا بكر', subs:true, track:true, sleep:60, speed:70, avoid:true,
+  const DEF = { prov:'gemini', gKey:'', gModel:'gemini-3.1-flash-lite', arStyle:'egy', vname:'Puck', pvEn:'', pvAr:'', ttsModel:'', oKey:'', oModel:'gpt-4o-mini', veng:'auto', fx:70,
+    hear:'en-US', wakeOn:true, wake:'', subs:true, track:true, sleep:60, speed:70, avoid:true,
     remOn:false, room:'' };
-  const FIELDS = ['prov','gKey','gModel','oKey','oModel','veng','fx','hear','wakeOn','wake','subs','track','sleep','speed','avoid','remOn'];
+  const FIELDS = ['prov','gKey','gModel','arStyle','vname','oKey','oModel','veng','fx','hear','wakeOn','wake','subs','track','sleep','speed','avoid','remOn'];
   let S = {...DEF};
   try { S = {...DEF, ...JSON.parse(localStorage.getItem('bkr-settings2')||'{}')}; } catch(e){}
+  if (/^gemini-(2\.5-flash|3\.6-flash)$/.test(S.gModel)) S.gModel = 'gemini-3.1-flash-lite';   // fastest model for a talking robot
+  if (S.v !== 3){ S.v = 3; S.wakeOn = true; if (/Hey BKR, Listen to me/.test(S.wake)) S.wake = ''; }
   if (!/^\d{4}$/.test(S.room)) S.room = String(1000 + Math.floor(Math.random()*9000));
   function saveS(){ try { localStorage.setItem('bkr-settings2', JSON.stringify(S)); return true; } catch(e){ return false; } }
   function fillForm(){ FIELDS.forEach(f=>{ const el=$(f); if (!el) return; if (el.type==='checkbox') el.checked = !!S[f]; else el.value = S[f]; }); $('roomCode').textContent = S.room; updLangChip(); }
   function readForm(){ FIELDS.forEach(f=>{ const el=$(f); if (!el) return; if (el.type==='checkbox') S[f] = el.checked; else if (el.type==='range') S[f] = Number(el.value); else S[f] = el.value.trim(); }); S.sleep = Number(S.sleep)||60; }
   fillForm(); saveS();
+  document.querySelectorAll('#settings input, #settings select').forEach(el => el.addEventListener('change', () => { if (el.id === 'remOn') return; readForm(); saveS(); updLangChip(); $('saved').textContent = 'Saved'; if (el.id === 'wakeOn' || el.id === 'hear'){ Ears.stopAll(); Ears.resumeWake(); } }));
 
   // =====================================================================
   // FACE (expressions + animation)
@@ -346,42 +371,78 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
   // VOICE: AI text-to-speech + Web Audio robot effect, phone voice as fallback
   // =====================================================================
   const Voice = (() => {
-    const cache = new Map();
-    let curSrc = null, usingAudio = false, stopFlag = 0;
-    let phoneVoices = [];
+    // ONE voice: the same Gemini (or OpenAI) voice for Arabic and English, with the robot effect.
+    // Every sentence it says is saved on the phone, so it keeps the same voice without internet.
+    const TTS_MODELS = ['gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts'];
+    const mem = new Map(), broken = new Set();
+    let curSrc = null, usingAudio = false, stopFlag = 0, phoneVoices = [];
     try { const lv = () => { phoneVoices = speechSynthesis.getVoices() || []; }; lv(); speechSynthesis.onvoiceschanged = lv; } catch(e){}
+    // --- small IndexedDB store for saved voice clips ---
+    let dbp = null;
+    function db(){ if (!dbp) dbp = new Promise((res, rej) => { try { const r = indexedDB.open('bkr-voice', 1); r.onupgradeneeded = () => r.result.createObjectStore('clips'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch(e){ rej(e); } }); return dbp; }
+    async function idbGet(k){ try { const d = await db(); return await new Promise(res => { const q = d.transaction('clips').objectStore('clips').get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch(e){ return null; } }
+    async function idbPut(k, v){ try { const d = await db(); await new Promise(res => { const tx = d.transaction('clips','readwrite'); tx.objectStore('clips').put(v, k); tx.oncomplete = res; tx.onerror = res; }); } catch(e){} }
+    async function idbCount(){ try { const d = await db(); return await new Promise(res => { const q = d.transaction('clips').objectStore('clips').count(); q.onsuccess = () => res(q.result); q.onerror = () => res(0); }); } catch(e){ return 0; } }
 
-    function engine(){
+    function engine0(){
       const v = S.veng;
       if (v === 'openai') return S.oKey ? 'openai' : 'phone';
       if (v === 'gemini') return S.gKey ? 'gemini' : 'phone';
       if (v === 'phone') return 'phone';
-      if (S.prov === 'openai' && S.oKey) return 'openai';
       if (S.gKey) return 'gemini';
       if (S.oKey) return 'openai';
       return 'phone';
     }
-    async function ttsOpenAI(text){
+    function engine(){ const e = engine0(); return broken.has(e) ? 'phone' : e; }
+    const clipKey = (eng, text) => eng + '|' + (eng === 'gemini' ? (S.vname || 'Puck') : 'echo') + '|' + (S.arStyle||'egy') + '|' + text;
+
+    async function fetchOpenAI(text){
       const r = await fetch('https://api.openai.com/v1/audio/speech', { method:'POST',
         headers:{'Authorization':'Bearer '+S.oKey,'Content-Type':'application/json'},
         body: JSON.stringify({ model:'gpt-4o-mini-tts', voice:'echo', input:text, response_format:'mp3',
-          instructions:'You are BKR, a small friendly robot. Speak clearly and a little flat and mechanical, upbeat, like a cartoon robot. If the text is Arabic, speak Egyptian Arabic.' }) });
-      if (!r.ok) throw new Error('OpenAI voice '+r.status+': '+(await r.text()).slice(0,160));
-      return await AC.decodeAudioData(await r.arrayBuffer());
+          instructions:'You are BKR, a small friendly robot. Always use the same calm, clear, slightly mechanical robot voice. Arabic text is Egyptian Arabic.' }) });
+      if (!r.ok) throw new Error('OpenAI voice '+r.status+': '+(await r.text()).slice(0,140));
+      return { kind:'mp3', data: await r.arrayBuffer() };
     }
-    async function ttsGemini(text){
-      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent', { method:'POST',
-        headers:{'x-goog-api-key':S.gKey,'Content-Type':'application/json'},
-        body: JSON.stringify({ contents:[{parts:[{text:'Say this as a small friendly robot, clear and slightly mechanical: '+text}]}],
-          generationConfig:{ responseModalities:['AUDIO'], speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName:'Puck' } } } } }) });
-      if (!r.ok) throw new Error('Gemini voice '+r.status+': '+(await r.text()).slice(0,160));
-      const j = await r.json();
-      const part = j?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-      if (!part) throw new Error('Gemini voice: no audio returned');
-      const raw = atob(part.inlineData.data), n = raw.length >> 1;
-      const m = /rate=(\d+)/.exec(part.inlineData.mimeType||''); const rate = m ? Number(m[1]) : 24000;
-      const buf = AC.createBuffer(1, n, rate), ch = buf.getChannelData(0);
-      for (let i=0;i<n;i++){ let v = raw.charCodeAt(2*i) | (raw.charCodeAt(2*i+1) << 8); if (v >= 32768) v -= 65536; ch[i] = v/32768; }
+    async function fetchGemini(text){
+      const style = isAr(text) ? (S.arStyle === 'fusha' ? 'in clear Modern Standard Arabic' : 'in a friendly Egyptian Arabic accent') : 'in English';
+      const body = JSON.stringify({ contents:[{ parts:[{ text: 'Read this aloud '+style+', as a friendly small robot with a calm, clear, slightly mechanical voice, at a lively pace: '+text }] }],
+        generationConfig:{ responseModalities:['AUDIO'], speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName: S.vname || 'Puck' } } } } });
+      const models = S.ttsModel ? [S.ttsModel, ...TTS_MODELS.filter(m => m !== S.ttsModel)] : TTS_MODELS;
+      let last = '';
+      for (const m of models){
+        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent', { method:'POST', headers:{'x-goog-api-key':S.gKey,'Content-Type':'application/json'}, body });
+        if (r.status === 404){ last = m+' 404'; continue; }
+        if (!r.ok) throw new Error('Gemini voice '+r.status+': '+(await r.text()).slice(0,140));
+        const j = await r.json(); const part = j?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+        if (!part) throw new Error('Gemini voice: no audio returned');
+        if (S.ttsModel !== m){ S.ttsModel = m; saveS(); }
+        const raw = atob(part.inlineData.data); const u8 = new Uint8Array(raw.length); for (let i=0;i<raw.length;i++) u8[i] = raw.charCodeAt(i);
+        const mr = /rate=(\d+)/.exec(part.inlineData.mimeType||'');
+        return { kind:'pcm', rate: mr ? Number(mr[1]) : 24000, data: u8.buffer };
+      }
+      throw new Error('Gemini voice: no voice model available ('+last+')');
+    }
+    async function toBuffer(clip){
+      if (clip.kind === 'mp3') return await AC.decodeAudioData(clip.data.slice(0));
+      const dv = new DataView(clip.data), n = clip.data.byteLength >> 1;
+      const buf = AC.createBuffer(1, n, clip.rate || 24000), ch = buf.getChannelData(0);
+      for (let i=0;i<n;i++) ch[i] = dv.getInt16(2*i, true) / 32768;
+      return buf;
+    }
+    // an AudioBuffer in the robot's one voice: from memory, from the phone's saved clips, or from the internet
+    async function getBuffer(text, allowNet){
+      const eng = engine0();
+      if (eng === 'phone') return null;
+      const k = clipKey(eng, text);
+      if (mem.has(k)) return mem.get(k);
+      let clip = await idbGet(k);
+      if (!clip && allowNet && navigator.onLine && !broken.has(eng)){
+        clip = eng === 'openai' ? await fetchOpenAI(text) : await fetchGemini(text);
+        idbPut(k, clip);
+      }
+      if (!clip) return null;
+      const buf = await toBuffer(clip); mem.set(k, buf); if (mem.size > 60) mem.delete(mem.keys().next().value);
       return buf;
     }
     // robot effect: ring modulator + metallic comb + presence, level meter for the mouth
@@ -412,44 +473,122 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
         curSrc = src; osc.start(); src.start();
       });
     }
+    // fallback: ONE fixed phone voice per language (chosen once and remembered)
+    function pickPhoneVoice(ar){
+      const want = ar ? S.pvAr : S.pvEn;
+      let v = want && phoneVoices.find(x => x.name === want);
+      if (!v){
+        const pool = phoneVoices.filter(x => x.lang && x.lang.toLowerCase().startsWith(ar ? 'ar' : 'en'));
+        v = pool.find(x => /male|man|boy|guy|david|daniel|iom|iol|tpd|rjs|ard|arz/i.test(x.name) && !/female/i.test(x.name)) || pool[0];
+        if (v){ if (ar) S.pvAr = v.name; else S.pvEn = v.name; saveS(); }
+      }
+      return v;
+    }
     function phoneSay(text){
       return new Promise(resolve => {
         try {
           const ar = isAr(text); const u = new SpeechSynthesisUtterance(text);
-          u.lang = ar ? 'ar-EG' : 'en-US';
-          const pool = phoneVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith(ar?'ar':'en'));
-          const male = pool.find(v => /male|man|boy|guy|david|daniel|iom|iol|tpd|rjs|ard|arz/i.test(v.name) && !/female/i.test(v.name));
-          if (male || pool[0]) u.voice = male || pool[0];
-          // flatter, lower and a bit slower = more "robot" than the default phone voice
-          u.pitch = 0.75; u.rate = ar ? 0.92 : 0.95; u.volume = 1;
+          u.lang = ar ? 'ar-EG' : 'en-US'; const v = pickPhoneVoice(ar); if (v) u.voice = v;
+          u.pitch = 0.75; u.rate = ar ? 0.95 : 1.0; u.volume = 1;
           let done = false; const fin = () => { if (!done){ done = true; resolve(); } };
           u.onend = fin; u.onerror = fin;
           speechSynthesis.cancel(); speechSynthesis.speak(u);
-          setTimeout(fin, 1500 + text.length*110);     // Android sometimes never fires onend
+          setTimeout(fin, 1500 + text.length*110);
         } catch(e){ resolve(); }
       });
     }
     async function speak(text){
       if (!text) return;
       const my = ++stopFlag;
-      const eng = engine(); const key = eng+'|'+S.fx+'|'+text;
-      if (eng !== 'phone' && AC){
+      if (AC){
         try {
           if (AC.state === 'suspended') await AC.resume();
-          let buf = cache.get(eng+'|'+text);
-          if (!buf){ buf = eng === 'openai' ? await ttsOpenAI(text) : await ttsGemini(text); cache.set(eng+'|'+text, buf); if (cache.size > 30) cache.delete(cache.keys().next().value); }
+          const buf = await getBuffer(text, true);
           if (my !== stopFlag) return;
-          chirp('robot'); await sleepMs(260);
-          usingAudio = true; await playRobot(buf); usingAudio = false;
-          return;
-        } catch(e){ usingAudio = false; logR('voice error: '+e.message); console.warn(e); note('AI voice failed, using the phone voice: '+e.message.slice(0,90)); }
+          if (buf){ usingAudio = true; await playRobot(buf); usingAudio = false; return; }
+        } catch(e){
+          usingAudio = false; const eng = engine0();
+          if (/ 40[134]| no voice model/.test(e.message)) broken.add(eng);
+          logR('voice error: '+e.message); note('Robot voice not available right now, using the phone voice: '+e.message.slice(0,90));
+        }
       }
       if (my !== stopFlag) return;
-      chirp('robot'); await sleepMs(260);
       await phoneSay(text);
     }
+    // save the voice of every built-in sentence, so the robot sounds the same offline
+    async function prepare(texts, onProgress){
+      if (engine0() === 'phone') throw new Error('Add a Gemini key first (or an OpenAI key).');
+      if (!AC) AC = new (window.AudioContext||window.webkitAudioContext)();
+      let done = 0, saved = 0;
+      for (const t of texts){
+        if (!(await idbGet(clipKey(engine0(), t)))){
+          let tries = 0;
+          while (true){
+            try { await getBuffer(t, true); saved++; break; }
+            catch(e){ if (/429/.test(e.message) && tries < 4){ tries++; onProgress && onProgress(done, texts.length, 'Google limit reached, waiting 30 s…'); await sleepMs(30000); continue; } throw e; }
+          }
+          await sleepMs(3000);
+        }
+        done++; onProgress && onProgress(done, texts.length);
+      }
+      return saved;
+    }
     function stop(){ stopFlag++; try{ curSrc && curSrc.stop(); }catch(e){} try{ speechSynthesis.cancel(); }catch(e){} usingAudio = false; }
-    return { speak, stop, engine, get usingAudio(){ return usingAudio; } };
+    return { speak, stop, engine, prepare, count: idbCount, get usingAudio(){ return usingAudio; } };
+  })();
+
+  // =====================================================================
+  // MUSIC: built-in tunes (offline, public-domain melodies) + YouTube
+  // =====================================================================
+  const Music = (() => {
+    let playing = null, stopFlag = 0, out = null;
+    const N = n => 440 * Math.pow(2, (n - 69) / 12);
+    const NOTE = { C4:60, D4:62, E4:64, F4:65, G4:67, A4:69, B4:71, C5:72, D5:74, E5:76, F5:77, G5:79, A5:81 };
+    const seq = str => str.split(' ').map(x => [x.replace('-',''), x.endsWith('-') ? 2 : 1]);
+    const TUNES = {
+      birthday: { beat:0.42, wave:'triangle', notes:[['G4',.75],['G4',.25],['A4',1],['G4',1],['C5',1],['B4',2],['G4',.75],['G4',.25],['A4',1],['G4',1],['D5',1],['C5',2],['G4',.75],['G4',.25],['G5',1],['E5',1],['C5',1],['B4',1],['A4',2],['F5',.75],['F5',.25],['E5',1],['C5',1],['D5',1],['C5',3]] },
+      twinkle:  { beat:0.38, wave:'triangle', notes: seq('C4 C4 G4 G4 A4 A4 G4- F4 F4 E4 E4 D4 D4 C4- G4 G4 F4 F4 E4 E4 D4- G4 G4 F4 F4 E4 E4 D4- C4 C4 G4 G4 A4 A4 G4- F4 F4 E4 E4 D4 D4 C4-') },
+      dance:    { beat:0.2, wave:'square', notes: [].concat(...Array(4).fill(seq('C4 C5 G4 C5 A4 C5 G4 E4 F4 C5 A4 C5 G4 D5 B4 G4'))) }
+    };
+    function find(q){
+      const t = (q||'').toLowerCase();
+      if (/happy ?birth ?day|birthday|هابي ?بيرث|بيرث ?داي|عيد ميلاد|سنة حلوة|سنه حلوه/.test(t)) return 'birthday';
+      if (/twinkle|little star|نجمة|نجمه/.test(t)) return 'twinkle';
+      if (/robot dance|^dance$|رقصة الروبوت|مزيكا روبوت|ارقص|رقص/.test(t)) return 'dance';
+      return null;
+    }
+    async function play(id){
+      const tune = TUNES[id]; if (!AC || !tune) return;
+      stop(); const my = ++stopFlag;
+      if (AC.state === 'suspended') await AC.resume();
+      playing = id; setMode('speaking'); setMood('happy');
+      if (id === 'dance' && Body.state === 'on') Body.send('W');
+      out = AC.createGain(); out.gain.value = 0.22; out.connect(AC.destination);
+      let t = AC.currentTime + 0.05;
+      for (const [nm, d] of tune.notes){
+        const dur = d * tune.beat;
+        const o = AC.createOscillator(), g = AC.createGain(); o.type = tune.wave; o.frequency.value = N(NOTE[nm]);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1, t+0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur*0.95);
+        o.connect(g); g.connect(out); o.start(t); o.stop(t + dur);
+        t += dur;
+      }
+      const end = performance.now() + (t - AC.currentTime) * 1000;
+      while (performance.now() < end && my === stopFlag){ mouthLevel = 0.5 + 0.5*Math.random(); bounce = Math.max(bounce, 0.3); await sleepMs(120); }
+      if (my === stopFlag){ playing = null; setMode('idle'); setMood('neutral'); Ears.resumeWake(); }
+    }
+    function stop(){ stopFlag++; if (out){ try { out.disconnect(); } catch(e){} out = null; } if (playing){ playing = null; setMode('idle'); } }
+    function youtube(q){
+      const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+      let w = null; try { w = window.open(url, '_blank'); } catch(e){}
+      if (!w){   // the browser blocks pop-ups that were not started by a tap: show a button to tap
+        const p = document.createElement('p'); p.className = 'sys';
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '▶ Open "'+q+'" on YouTube';
+        a.style.color = 'var(--mustard)'; a.style.fontWeight = '700'; a.style.fontSize = '18px';
+        p.append(a); cap.append(p); clearTimeout(capTimer);
+      }
+      logR('youtube: '+q);
+    }
+    return { play, stop, find, youtube, get playing(){ return playing; } };
   })();
 
   // =====================================================================
@@ -457,48 +596,59 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
   // =====================================================================
   const Ears = (() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let rec = null, active = false, wakeLoop = false, wantCmd = false, level = 0;
+    let rec = null, active = false, wakeLoop = false, level = 0;
+    // The always-on listener runs in English. Chrome writes the Arabic name "بكر" as Baker / Bakr / Backer…,
+    // so: "Listen" -> listen in English, "بكر" -> listen in Egyptian Arabic.
+    const EN_WAKE = ['listen to me','listen','hey bkr','hey b k r','okay bkr'];
+    const AR_WAKE = ['بكر','baker','bakr','backer','becker','bakar','bekar','bakker','packer','b k r','bkr','ليسن','اسمعني'];
     function supported(){ return !!SR; }
-    function wakeWords(){ return S.wake.split(',').map(w => w.trim().toLowerCase()).filter(Boolean); }
-    function make(continuous){
-      const r = new SR(); r.lang = S.hear; r.interimResults = true; r.continuous = continuous; r.maxAlternatives = 1; return r;
+    function make(lang, continuous){ const r = new SR(); r.lang = lang; r.interimResults = true; r.continuous = continuous; r.maxAlternatives = 3; return r; }
+    function findWake(text){
+      const low = ' '+text.toLowerCase().replace(/[.,!?،؟]/g,' ')+' ';
+      const extra = (S.wake||'').split(',').map(w=>w.trim().toLowerCase()).filter(Boolean);
+      for (const w of extra.concat(EN_WAKE)) { const i = low.indexOf(' '+w+' '); if (i >= 0) return { lang: isAr(w) ? 'ar-EG' : 'en-US', rest: low.slice(i + w.length + 2).trim() }; }
+      for (const w of AR_WAKE) { const i = low.indexOf(w); if (i >= 0) return { lang:'ar-EG', rest:'' }; }
+      return null;
     }
-    function listenOnce(){
+    function listenOnce(lang){
+      lang = lang || S.hear;
       if (!SR){ sysMsg('Speech recognition is not available in this browser. Use Chrome on Android.'); return; }
       stopAll(); Voice.stop();
-      rec = make(false); active = true; let finalText = '';
-      setMode('listening'); setMood('listening'); chirp('listen'); say(null, null, null);
-      rec.onresult = e => { let t = ''; for (let i=e.resultIndex;i<e.results.length;i++){ t += e.results[i][0].transcript; if (e.results[i].isFinal) finalText = t; } level = 0.6; setTimeout(()=>level=0, 150); say(t, null); };
+      rec = make(lang, false); active = true; let finalText = '';
+      setMode('listening'); setMood('listening'); chirp('listen');
+      say(null, lang==='ar-EG' ? 'سامعك… اتكلم' : 'Listening… go ahead');
+      rec.onresult = e => { let t = ''; for (let i=0;i<e.results.length;i++){ t += e.results[i][0].transcript; } finalText = t; level = 0.6; setTimeout(()=>level=0, 150); say(t, null); };
       rec.onerror = e => { active = false;
-        const msg = {'not-allowed':'Microphone permission is blocked. Allow the microphone for this site in Chrome settings.','no-speech':'I did not hear anything. Tap the mic and try again.','network':'Speech recognition needs internet.','audio-capture':'No microphone found.'}[e.error] || ('Speech error: '+e.error);
+        const msg = {'not-allowed':'Microphone permission is blocked. Allow the microphone for this site in Chrome settings.','no-speech':'I did not hear anything.','network':'Speech recognition needs internet.','audio-capture':'No microphone found.','language-not-supported':'This phone cannot recognise '+lang+'. Install the language in Android settings → Google → Speech.'}[e.error] || ('Speech error: '+e.error);
         setMode('idle'); setMood(e.error==='no-speech'?'neutral':'sad', 1500); sysMsg(msg); };
       rec.onend = () => { if (!active) { resumeWake(); return; } active = false; const t = finalText.trim();
         if (t){ Brain.handle(t, 'voice'); } else { setMode('idle'); setMood('neutral'); cap.innerHTML=''; resumeWake(); } };
       try { rec.start(); } catch(e){ active = false; setMode('idle'); sysMsg('Could not start the microphone: '+e.message); }
     }
-    function stopAll(){ wakeLoop = false; active = false; try { rec && rec.abort(); } catch(e){} rec = null; }
-    // always-listening mode: waits for a wake word, then treats the rest as the request
+    function stopAll(){ wakeLoop = false; active = false; try { rec && rec.abort(); } catch(e){} rec = null; $('earChip').hidden = true; }
     function startWake(){
-      if (!SR || !S.wakeOn || mode !== 'idle') return;
+      if (!SR || !S.wakeOn || mode !== 'idle' || active || Brain.busy || document.hidden) return;
       if (wakeLoop) return; wakeLoop = true;
-      rec = make(true);
+      rec = make('en-US', true);
+      $('earChip').hidden = false; $('earChip').classList.add('on');
       rec.onresult = e => {
         for (let i=e.resultIndex;i<e.results.length;i++){
-          if (!e.results[i].isFinal) continue;
-          const t = e.results[i][0].transcript.trim(), low = t.toLowerCase();
-          const w = wakeWords().find(w => low.includes(w));
-          if (!w) continue;
-          const rest = t.slice(low.indexOf(w) + w.length).replace(/^[\s,،.!?]+/, '').trim();
-          stopAll(); wake();
-          if (rest.length > 1) Brain.handle(rest, 'voice'); else listenOnce();
-          return;
+          const alts = []; for (let k=0;k<e.results[i].length;k++) alts.push(e.results[i][k].transcript);
+          for (const t of alts){
+            const w = findWake(t); if (!w) continue;
+            stopAll(); wake();
+            if (w.lang === 'en-US' && w.rest.length > 2 && e.results[i].isFinal) Brain.handle(w.rest, 'voice');
+            else setTimeout(() => listenOnce(w.lang), 250);
+            return;
+          }
         }
       };
-      rec.onerror = e => { if (e.error === 'not-allowed'){ S.wakeOn = false; sysMsg('Microphone blocked: wake word turned off.'); } };
-      rec.onend = () => { const was = wakeLoop; wakeLoop = false; if (was) setTimeout(startWake, 400); };
+      rec.onerror = e => { if (e.error === 'not-allowed'){ S.wakeOn = false; saveS(); sysMsg('Microphone blocked: hands-free listening turned off.'); } };
+      rec.onend = () => { const was = wakeLoop; wakeLoop = false; if (was && S.wakeOn) setTimeout(startWake, 300); else $('earChip').hidden = true; };
       try { rec.start(); } catch(e){ wakeLoop = false; }
     }
-    function resumeWake(){ if (S.wakeOn) setTimeout(startWake, 600); }
+    function resumeWake(){ if (S.wakeOn) setTimeout(startWake, 700); }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); else resumeWake(); });
     return { listenOnce, stopAll, startWake, resumeWake, supported, get active(){ return active; }, get level(){ return level; } };
   })();
 
@@ -515,8 +665,8 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
       state = s;
       const dot = $('bleDot'), txt = $('bleTxt');
       dot.className = 'dot' + (s==='on' ? ' on' : (s==='connecting'||s==='reconnecting' ? ' mid' : ''));
-      const label = {off:'Robot body · tap to connect', connecting:'Robot body · connecting…', reconnecting:'Robot body · reconnecting…', on:'Robot body · connected'+(dist>=0?' · '+dist+' cm':'')}[s] + extra;
-      txt.textContent = label; $('bleRow').textContent = label.replace('Robot body · ','');
+      const label = {off:'Robot · tap to connect', connecting:'Robot · connecting…', reconnecting:'Robot · reconnecting…', on:'Robot · connected'+(dist>=0?' · '+dist+' cm':'')}[s] + extra;
+      txt.textContent = label; $('bleRow').textContent = label.replace('Robot · ','');
       $('connectBtn').textContent = s === 'off' ? 'Connect' : 'Disconnect';
       Remote.push();
     }
@@ -607,25 +757,93 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
   // =====================================================================
   const Brain = (() => {
     const history = [];       // {role:'user'|'assistant', text}
-    const INTRO_EN = "Hi! I'm BKR, a low-cost robot that turns any smartphone into a robot's brain. My phone is my face, my ears and my eyes, and an ESP32 drives my wheels and arms. Mohamed and Ismail built me for ISEF to give old phones a second life.";
-    const INTRO_AR = 'أهلًا! أنا بكر، روبوت رخيص بيحوّل أي موبايل لعقل روبوت. الموبايل هو وشي وودني وعنيا، والـ ESP32 بيحرّك عجلي ودراعاتي. محمد وإسماعيل عملوني لمسابقة آيسف علشان الموبايلات القديمة تعيش تاني.';
-    const NO_AI_EN = "My AI brain isn't connected yet. Add a Gemini or OpenAI key in my settings, and I'll be able to answer anything.";
-    const NO_AI_AR = 'عقلي الذكي لسه مش متوصل. حط مفتاح Gemini أو OpenAI في الإعدادات وهقدر أرد على أي سؤال.';
-    const SYSTEM = [
-      'You are BKR (بكر), a small friendly robot built by two Egyptian students, Mohamed and Ismail, for the ISEF science fair in Assiut, Egypt.',
-      'Your body: any smartphone is your brain and face (screen = eyes, microphone = ears, camera = eyes), on a 4-wheel ESP32 body with two arms and an ultrasonic distance sensor on a turning servo.',
-      'You cannot measure temperature, heart rate or anything else yet; never pretend to. You can move, wave, raise arms and avoid obstacles.',
-      'Reply in the SAME language the user used. If the user speaks Arabic, answer in friendly Egyptian Arabic (عامية مصرية).',
-      'Keep replies short: at most 2 sentences, simple words, kid-friendly, warm and a little playful.',
-      'Return ONLY a JSON object: {"reply": string, "emotion": one of ["neutral","happy","sad","angry","surprised","sleepy","thinking","love"], "action": {"type": one of ["none","forward","back","left","right","stop","wave","arms_up","arms_down","auto_on","auto_off"], "seconds": number 0-5}}.',
-      'Only use a movement action when the user clearly asks you to move. Otherwise use {"type":"none","seconds":0}.'
-    ].join('\n');
+    const INTRO_EN = "Hi! I'm BKR, a low-cost robot that turns any smartphone into a robot's brain. My phone is my face, my ears and my eyes, and an ESP32 drives my wheels and arms. I was built by Mohamed Darwish Farag, his friends call him Bakkar, to give old phones a second life.";
+    const INTRO_AR = 'أهلًا! أنا بكر، روبوت رخيص بيحوّل أي موبايل لعقل روبوت. الموبايل هو وشي وودني وعنيا، والـ ESP32 بيحرّك عجلي ودراعاتي. اللي عملني محمد درويش فرج، وصحابه بيقولوله بكار، علشان الموبايلات القديمة تعيش تاني.';
+    const NO_AI_EN = "My AI brain isn't connected yet. Add a Gemini key in my settings and I'll be able to answer anything.";
+    const NO_AI_AR = 'عقلي الذكي لسه مش متوصل. حط مفتاح Gemini في الإعدادات وهقدر أرد على أي سؤال.';
+    const OFFLINE_EN = "I'm offline right now, so I can't look that up. But I can introduce myself, tell a joke, play a song, tell you the time, and move around!";
+    const OFFLINE_AR = 'أنا من غير نت دلوقتي، فمش هقدر أدور على ده. بس أقدر أعرّف نفسي، وأقول نكتة، وأشغّل أغنية، وأقولك الساعة كام، وأتحرك!';
+    const ABOUT_EN = "I can talk with you in Arabic and English, answer questions, tell jokes, play songs, move forward, back, left and right, wave and raise my arms, measure distance, and explore on my own while avoiding obstacles.";
+    const ABOUT_AR = 'أقدر أتكلم معاك عربي وإنجليزي، وأجاوب أسئلتك، وأقول نكت، وأشغّل أغاني، وأتحرك لقدام وورا ويمين وشمال، وأسلّم وأرفع إيديا، وأقيس المسافة، وأتمشى لوحدي وأتفادى العقبات.';
+    const MAKER_EN = "Mohamed Darwish Farag built me. His friends call him Bakkar. He made me so that any old phone can become a smart robot for less than twenty dollars.";
+    const MAKER_AR = 'اللي عملني محمد درويش فرج، وصحابه بيقولوله بكار. عملني علشان أي موبايل قديم يبقى روبوت ذكي بأقل من عشرين دولار.';
+    const JOKES_EN = [
+      "Why did the robot go on holiday? Because it needed to recharge its batteries!",
+      "Why was the robot so calm? Because it had nerves of steel!",
+      "What is a robot's favourite snack? Computer chips!",
+      "Why did the phone wear glasses? Because it lost all its contacts!",
+      "Why did the robot cross the road? Because it was programmed by a chicken!",
+      "What did the robot say to the old phone? Don't worry, you still have a lot of power left!",
+      "Why did the robot get a good grade? Because it was really good at taking notes, beep boop!",
+      "What do robots do at a party? They dance the robot, of course!"];
+    const JOKES_AR = [
+      'مرة روبوت راح للدكتور وقاله أنا تعبان. الدكتور قاله: إنت محتاج تتشحن، مش تتعالج!',
+      'ليه الروبوت مبيخافش؟ علشان قلبه من حديد!',
+      'مرة موبايل قديم كان قاعد في الدرج زهقان، جه بكر قاله: تعالى نبقى روبوت!',
+      'الروبوت بيحب ياكل إيه؟ شيبسي، بس شيبس كمبيوتر!',
+      'مرة روبوت اتأخر على المدرسة، المدرس سأله ليه؟ قاله: البطارية كانت نايمة!',
+      'ليه الموبايل لبس نضارة؟ علشان ضيّع كل الكونتاكتس!',
+      'مرة روبوت كسلان قالوله اتحرك، قالهم: استنوا، بنزّل تحديث!',
+      'الروبوت قال لصاحبه: أنا عندي مشاعر كتير، بس كلها باللون الأصفر!'];
+    const SHORT = ['حاضر، وقفت.','Okay, stopping.','حاضر، هشغّلها!','Sure, here it comes!','يلا بينا!',"Let's go!",'ماشي لقدام!','Moving forward!','راجع لورا.','Going back.','هلف شمال.','Turning left.','هلف يمين.','Turning right.','أهلًا بيك!','Hello there!','إيديا فوق!','Hands up!','نزلتهم.','Arms down.','هلف لوحدي وأتفادى العقبات!',"I'll explore on my own and avoid obstacles!",'تمام، بطلت.','Okay, I stopped exploring.','وأنا كمان بحبك!','I love you too!','أنا تمام الحمد لله، وبطاريتي مليانة! وإنت عامل إيه؟',"I'm great, thanks! My batteries are full. How about you?",'تصبح على خير.','Good night.','أهلًا! أنا بكر. قول بكر وكلمني.',"Hi! I'm BKR. Say Listen and talk to me.",'بس بقى! كده بتزغزغني.','Hey! That tickles too much!','حاضر.','Okay.'];
+    let jokeI = Math.floor(Math.random()*8);
+    const nowText = ar => new Date().toLocaleTimeString(ar ? 'ar-EG' : 'en-US', {hour:'numeric', minute:'2-digit'});
+    const dateText = ar => new Date().toLocaleDateString(ar ? 'ar-EG' : 'en-US', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    function systemPrompt(){
+      const arabic = S.arStyle === 'fusha'
+        ? 'If the user speaks Arabic, answer in clear, simple Modern Standard Arabic (فصحى بسيطة).'
+        : 'If the user speaks Arabic, answer in natural, friendly Egyptian Arabic (عامية مصرية), the way a smart Egyptian kid talks.';
+      return [
+        'You are BKR (بكر), a small, friendly, smart robot. Speak as BKR in the first person.',
+        'ABOUT YOU (true facts, use them when asked):',
+        '- You were designed and built by Mohamed Darwish Farag (محمد درويش فرج), an Egyptian student. His friends call him Bakkar (بكار). He works on you alone.',
+        '- You are his science-fair project for ISEF in Egypt (Assiut), project code ROBO-09: "Development of a Low-Cost AI-Powered Modular Robotic Platform".',
+        '- The problem: in 2022 the world made a record 62 million tonnes of e-waste and only 22.3% was collected and recycled; 60 to 70% of old phones sit unused in drawers; research robots built on phones cost 50 to 1000 US dollars.',
+        '- The idea: any smartphone, an old one or the one you use every day, becomes the robot brain. The phone screen is your face, its microphone your ears, its camera your eyes, its speaker your voice.',
+        '- Your parts: an Android web app (face, listening, AI answers, robot voice); a website that lets people drive you and watch your camera from anywhere; and an ESP32 body with an L298N motor driver, four DC gear motors, an HC-SR04 ultrasonic sensor on a servo that looks left and right, two servo arms, two 18650 batteries and a 5 V step-down. The phone talks to the ESP32 over Bluetooth Low Energy.',
+        '- Safety: a watchdog stops the motors 0.5 seconds after the phone link is lost, and you stop and turn away from obstacles closer than 20 cm.',
+        '- Your body costs under 20 US dollars without the phone.',
+        '- Expected results (targets still being tested; say so if asked): about 47 ms command delay, about 94% voice-command accuracy in Arabic and English, stopping in about 0.63 s when the link is lost.',
+        '- Uses: a companion at home, a robotics kit for schools, a helper in clinics and on farms in the future, and a platform anyone can customise.',
+        '- Future plans: tank tracks, more sensors (temperature, heart rate, soil moisture) and an iPhone version. You cannot measure temperature, heart rate or soil yet; never pretend you can.',
+        'HOW TO ANSWER:',
+        '- Answer general-knowledge questions (science, history, maths, geography, sports, everyday advice) correctly and simply, like a smart, kind robot. If you are not sure, say so.',
+        '- Jokes: short, clean, original, family-friendly.',
+        '- Reply in the SAME language the user used. '+arabic,
+        '- Your words are spoken aloud: 1 to 3 short sentences, no emojis, no lists, no markdown.',
+        '- Be warm, confident and a little playful. Never be rude.',
+        'Return ONLY a JSON object: {"reply": string, "emotion": one of ["neutral","happy","sad","angry","surprised","sleepy","thinking","love"], "action": {"type": one of ["none","forward","back","left","right","stop","wave","arms_up","arms_down","auto_on","auto_off","play_song","stop_music"], "seconds": number 0-5, "query": string}}.',
+        '- Use a movement action only when the user clearly asks you to move. Use "play_song" with "query" = the song and singer when the user asks to play or open a song or music. Otherwise use {"type":"none","seconds":0}.'
+      ].join('\n');
+    }
 
     // built-in intents: work offline, no API key needed
     function local(text){
       const t = text.toLowerCase().replace(/[!?.،؟]/g,' ').trim();
       const ar = isAr(text);
       const R = (reply, emotion, type, seconds) => ({ reply, emotion, action: type ? {type, seconds: seconds||0} : {type:'none', seconds:0} });
+      const ai = aiReady();
+      // music
+      if (/^(stop|pause) (the )?(music|song)|^stop playing/.test(t) || /(اقف|إقف|وقف|اقفل|بطل) (ال)?(اغنية|أغنية|اغنيه|أغنيه|مزيكا|موسيقى|موسيقي)/.test(t)) return { ...R(ar ? 'حاضر.' : 'Okay.', 'neutral'), action:{type:'stop_music'} };
+      const songM = /^(?:can you |please )?(?:play|put on|open)(?: me)?(?: the)?(?: song| music)? (.+?)(?: on youtube| from youtube)?$/.exec(t)
+           || /^(?:ممكن |لو سمحت )?(?:شغ[لّ]+|شغلي|شغلّي|شغل لي|شغللي|افتح|افتحلي|افتح لي)(?: لي| ليا)? ?(?:اغنية|أغنية|اغنيه|أغنيه|مزيكا|موسيقى|موسيقي|اغاني|أغاني)? ?(.+?)(?: على| ع| من)? ?(?:اليوتيوب|يوتيوب)?$/.exec(t);
+      if (songM && (/\b(song|music|youtube|play)\b/.test(t) || /(اغنية|أغنية|اغنيه|أغنيه|اغاني|أغاني|مزيكا|موسيقى|يوتيوب|^شغ)/.test(t))){
+        const q = songM[1].trim(); const tune = Music.find(q) || Music.find(t);
+        if (tune) return { ...R(ar ? 'حاضر، هشغّلها!' : 'Sure, here it comes!', 'happy'), action:{type:'play_song', query:q} };
+        if (q.length > 1) return { ...R(ar ? 'هفتحلك '+q+' على يوتيوب.' : 'Opening '+q+' on YouTube.', 'happy'), action:{type:'play_song', query:q} };
+      }
+      if (/happy birthday|sing (a song|for me)|^dance$|do the robot dance/.test(t) || /(غن[يّ]|غنيلي|ارقص|عيد ميلاد|سنة حلوة)/.test(t)){
+        const tune = Music.find(t) || 'birthday'; return { ...R(ar ? 'يلا بينا!' : "Let's go!", 'happy'), action:{type:'play_song', query: tune === 'dance' ? 'robot dance' : 'happy birthday'} };
+      }
+      // exact and instant, always built-in
+      if (/what time|the time now|what's the time/.test(t) || /(الساعة|الساعه) (كام|كم)|الوقت (كام|ايه|إيه)/.test(t)) return R(ar ? 'الساعة دلوقتي '+nowText(true)+'.' : "It's "+nowText(false)+' right now.', 'happy');
+      if (/what('s| is) the date|what day is (it|today)|today's date/.test(t) || /(النهارده|النهاردة|اليوم) (ايه|إيه|كام)|التاريخ/.test(t)) return R(ar ? 'النهارده '+dateText(true)+'.' : 'Today is '+dateText(false)+'.', 'happy');
+      if (/what can you do|what are you able|your (skills|abilities)/.test(t) || /(بتعرف|تقدر|بتقدر) (تعمل|تعمله) (ايه|إيه)|مميزاتك|قدراتك/.test(t)) return R(ar ? ABOUT_AR : ABOUT_EN, 'happy', 'wave');
+      if (/who (made|built|created|designed) you|your (creator|maker|inventor)/.test(t) || /مين (اللي )?(عملك|صممك|اخترعك|صنعك|برمجك)|صاحبك مين/.test(t)) return R(ar ? MAKER_AR : MAKER_EN, 'love');
+      // jokes and small talk: the AI when online, built-in otherwise
+      if (!ai && (/\bjoke\b|make me laugh|funny/.test(t) || /(نكت[ةه]|نكتة|نكته|ضحكني|حاجة تضحك)/.test(t))){ jokeI++; return R(ar ? JOKES_AR[jokeI % JOKES_AR.length] : JOKES_EN[jokeI % JOKES_EN.length], 'happy'); }
+      if (!ai && (/how are you|how('s| is) it going/.test(t) || /(عامل ايه|عامل إيه|ازيك|إزيك|اخبارك|أخبارك)/.test(t))) return R(ar ? 'أنا تمام الحمد لله، وبطاريتي مليانة! وإنت عامل إيه؟' : "I'm great, thanks! My batteries are full. How about you?", 'happy');
+      if (/^i love you/.test(t) || /^بحبك/.test(t)) return R(ar ? 'وأنا كمان بحبك!' : 'I love you too!', 'love');
       if (/introduce yourself|who are you|what('s| is) your name|tell me about yourself/.test(t) || /عر[فّ]+ ?(ن|ني )?(نفسك|بنفسك)|قد[مّ]+ نفسك|ا?نت مين|إنت مين|اسمك (ايه|إيه|اية)/.test(t))
         return R(ar ? INTRO_AR : INTRO_EN, 'happy', 'wave');
       if (/^(stop|stop it|halt|freeze|stop moving)$|\bstop (moving|now|right now)\b/.test(t) || /^(اقف|إقف|وقف|استنى|بس|اقف يا بكر)$|اقف مكانك|وقف حالا/.test(t)) return R(ar ? 'حاضر، وقفت.' : 'Okay, stopping.', 'neutral', 'stop');
@@ -646,30 +864,42 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
       if (/go to sleep|sleep now/.test(t) || /^(نام|نام يا بكر)$/.test(t)) return { ...R(ar ? 'تصبح على خير.' : 'Good night.', 'sleepy'), sleep:true };
       return null;
     }
+    function aiReady(){ return navigator.onLine && S.prov !== 'none' && !!(S.gKey || S.oKey); }
     function parseJSON(txt){
       if (!txt) throw new Error('empty reply');
       let s = txt.trim().replace(/^```(json)?/i,'').replace(/```$/,'').trim();
       const a = s.indexOf('{'), b = s.lastIndexOf('}'); if (a >= 0 && b > a) s = s.slice(a, b+1);
       const j = JSON.parse(s);
       return { reply: String(j.reply||'').slice(0, 600), emotion: MOODS.includes(j.emotion) ? j.emotion : 'neutral',
-               action: (j.action && typeof j.action === 'object') ? { type: String(j.action.type||'none'), seconds: Number(j.action.seconds)||0 } : {type:'none',seconds:0} };
+               action: (j.action && typeof j.action === 'object') ? { type: String(j.action.type||'none'), seconds: Number(j.action.seconds)||0, query: String(j.action.query||'') } : {type:'none',seconds:0} };
     }
-    function context(){ return '\n[Robot status: body '+(Body.state==='on'?'connected':'not connected')+(Body.dist>=0?', obstacle '+Body.dist+' cm ahead':'')+']'; }
+    function context(){ return '\n[Now: '+new Date().toLocaleString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})+' (Egypt). Robot status: body '+(Body.state==='on'?'connected':'not connected')+(Body.dist>=0?', obstacle '+Body.dist+' cm ahead':'')+']'; }
     async function askGemini(text){
       const contents = history.slice(-8).map(h => ({ role: h.role === 'assistant' ? 'model' : 'user', parts:[{text:h.text}] }));
       contents.push({ role:'user', parts:[{ text: text + context() }] });
-      const gc = { responseMimeType:'application/json', temperature:0.8, maxOutputTokens:1024 };
-      if (/2\.5-flash/.test(S.gModel)) gc.thinkingConfig = { thinkingBudget: 0 };   // faster replies on 2.5 Flash
-      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(S.gModel)+':generateContent', {
+      const gc = { responseMimeType:'application/json', maxOutputTokens:1024 };
+      // speed: Gemini 3 "thinks" before answering by default; a robot chat needs the fastest level
+      if (/^gemini-3/.test(S.gModel) && !/lite/.test(S.gModel)) gc.thinkingConfig = { thinkingLevel: 'low' };
+      else if (/2\.5-flash/.test(S.gModel)) gc.thinkingConfig = { thinkingBudget: 0 };
+      const post = (g) => fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(S.gModel)+':generateContent', {
         method:'POST', headers:{'x-goog-api-key':S.gKey,'Content-Type':'application/json'},
-        body: JSON.stringify({ systemInstruction:{ parts:[{text:SYSTEM}] }, contents, generationConfig: gc }) });
+        body: JSON.stringify({ systemInstruction:{ parts:[{text:systemPrompt()}] }, contents, generationConfig: g }) });
+      let r = await post(gc);
+      if (!r.ok && r.status === 400 && gc.thinkingConfig){ delete gc.thinkingConfig; r = await post(gc); }   // model without that setting
+      if (r.status === 404){   // model retired or not open to this key: try the next fast model and remember it
+        for (const m of ['gemini-3.1-flash-lite','gemini-3.6-flash','gemini-3.5-flash','gemini-flash-latest'].filter(m => m !== S.gModel)){
+          const old = S.gModel; S.gModel = m; const g2 = { responseMimeType:'application/json', maxOutputTokens:1024 };
+          if (/^gemini-3/.test(m) && !/lite/.test(m)) g2.thinkingConfig = { thinkingLevel:'low' };
+          r = await post(g2); if (r.ok){ saveS(); const el = $('gModel'); if (el) el.value = m; logR('Gemini model switched to '+m); break; } S.gModel = old;
+        }
+      }
       if (!r.ok) throw new Error('Gemini '+r.status+': '+(await r.text()).slice(0,200));
       const j = await r.json();
-      const txt = (j?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+      const txt = (j?.candidates?.[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');
       return parseJSON(txt);
     }
     async function askOpenAI(text){
-      const messages = [{role:'system', content:SYSTEM}, ...history.slice(-8).map(h => ({role:h.role, content:h.text})), {role:'user', content: text + context()}];
+      const messages = [{role:'system', content:systemPrompt()}, ...history.slice(-8).map(h => ({role:h.role, content:h.text})), {role:'user', content: text + context()}];
       const r = await fetch('https://api.openai.com/v1/chat/completions', { method:'POST',
         headers:{'Authorization':'Bearer '+S.oKey,'Content-Type':'application/json'},
         body: JSON.stringify({ model:S.oModel, messages, response_format:{type:'json_object'} }) });
@@ -682,7 +912,7 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
       const ar = isAr(text);
       const prov = S.prov === 'openai' ? (S.oKey ? 'openai' : (S.gKey ? 'gemini' : null)) : S.prov === 'gemini' ? (S.gKey ? 'gemini' : (S.oKey ? 'openai' : null)) : null;
       if (!prov) return { reply: ar ? NO_AI_AR : NO_AI_EN, emotion:'sad', action:{type:'none'}, source:'built-in' };
-      if (!navigator.onLine) return { reply: ar ? 'مفيش نت دلوقتي، فمش هقدر أفكر. بس أقدر أتحرك وأعرّف نفسي.' : "There's no internet, so I can't think right now. I can still move and introduce myself.", emotion:'sad', action:{type:'none'}, source:'built-in' };
+      if (!navigator.onLine) return { reply: ar ? OFFLINE_AR : OFFLINE_EN, emotion:'sad', action:{type:'none'}, source:'built-in' };
       const res = prov === 'openai' ? await askOpenAI(text) : await askGemini(text);
       return { ...res, source: prov };
     }
@@ -692,7 +922,7 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
       Ears.stopAll(); Voice.stop(); wake();
       setMode('thinking'); setMood('thinking'); say(text, null);
       Remote.send({ t:'heard', text, from });
-      let res;
+      let res; const tThink = performance.now();
       try { res = await think(text); }
       catch(e){ console.warn(e); logR('AI error: '+e.message);
         res = { reply: isAr(text) ? 'آسف، معرفتش أوصل لعقلي دلوقتي.' : "Sorry, I couldn't reach my brain right now.", emotion:'sad', action:{type:'none'}, source:'error', err:e.message }; }
@@ -700,12 +930,20 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
       setMode('speaking'); setMood(res.emotion || 'neutral'); say(text, res.reply);
       Remote.send({ t:'reply', text:res.reply, emotion:res.emotion, action:res.action && res.action.type, source:res.source });
       if (res.err) note('AI error: '+res.err.slice(0,140));
-      Body.action(res.action);
+      const thinkMs = performance.now() - tThink;
+      const act = res.action || {type:'none'};
+      if (act.type === 'stop_music') Music.stop();
+      if (act.type !== 'play_song' && act.type !== 'stop_music') Body.action(act);
+      const tVoice = performance.now();
       await Voice.speak(res.reply);
+      if (act.type === 'play_song'){ const q = act.query || text; const tune = Music.find(q) || Music.find(text);
+        if (tune){ logR('song: '+tune); busy = false; setTimeout(() => Music.play(tune), 50); return res; }
+        Music.youtube(q); }
+      logR('timing: brain '+Math.round(thinkMs)+' ms ('+res.source+') · voice '+Math.round(performance.now()-tVoice)+' ms ('+Voice.engine()+')');
       setMode('idle'); setMood(res.emotion === 'sleepy' ? 'sleepy' : 'neutral'); chirp('done');
       if (res.sleep){ asleep = true; }
       busy = false;
-      capTimer = setTimeout(()=>{ if (mode==='idle') cap.innerHTML=''; }, 6000);
+      capTimer = setTimeout(()=>{ if (mode==='idle') cap.innerHTML=''; }, act.type === 'play_song' ? 25000 : 6000);
       Ears.resumeWake();
       return res;
     }
@@ -716,7 +954,8 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
       const r = prov === 'openai' ? await askOpenAI('Say hello in one short sentence.') : await askGemini('Say hello in one short sentence.');
       return 'OK in '+Math.round(performance.now()-t0)+' ms: "'+r.reply+'" ('+r.emotion+')';
     }
-    return { handle, testAI, local, get busy(){ return busy; } };
+    function offlineTexts(){ return [INTRO_EN, INTRO_AR, ABOUT_EN, ABOUT_AR, MAKER_EN, MAKER_AR, OFFLINE_EN, OFFLINE_AR, NO_AI_EN, NO_AI_AR, ...JOKES_EN, ...JOKES_AR, ...SHORT]; }
+    return { handle, testAI, local, offlineTexts, get busy(){ return busy; } };
   })();
 
   // =====================================================================
@@ -754,25 +993,26 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
   // =====================================================================
   const Remote = (() => {
     let peer = null, conn = null, call = null, on = false, lastDrive = 0, driving = null, statusTimer = null, guard = null;
-    function chip(state, text){ $('remChip').hidden = !on; $('remDot').className = 'dot' + (state==='on'?' on':(state==='wait'?' mid':'')); $('remTxt').textContent = text; }
+    function chip(state, text){ $('remDot').className = 'dot' + (state==='on'?' on':(state==='wait'?' mid':'')); $('remTxt').textContent = text; }
     function loadLib(){ return window.Peer ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js'; s.onload = res; s.onerror = () => rej(new Error('could not load PeerJS (internet?)')); document.head.append(s); }); }
     async function enable(){
-      on = true; chip('wait', 'Remote · starting…');
-      try { await loadLib(); } catch(e){ chip('off', 'Remote · '+e.message); return; }
+      on = true; chip('wait', 'Website · starting camera…');
+      try { await Cam.start(); $('camv').classList.add('show'); } catch(e){ chip('off', 'Camera blocked: allow the camera for this site'); sysMsg('Camera: '+e.message+'. Allow the camera in Chrome site settings.', 7000); on = false; S.remOn = false; saveS(); return; }
+      try { await loadLib(); } catch(e){ chip('off', 'Website · '+e.message); return; }
       try { peer && peer.destroy(); } catch(e){}
       peer = new window.Peer('bkr-robot-'+S.room);
-      peer.on('open', () => chip('wait', 'Remote · code '+S.room+' · waiting'));
-      peer.on('error', e => { chip('off', 'Remote · '+(e.type==='unavailable-id' ? 'code busy, press New code' : e.type)); logR('remote error '+e.type); });
-      peer.on('disconnected', () => { if (on) { chip('wait', 'Remote · reconnecting'); try { peer.reconnect(); } catch(e){} } });
+      peer.on('open', () => chip('wait', 'Website · code '+S.room));
+      peer.on('error', e => { chip('off', 'Website · '+(e.type==='unavailable-id' ? 'code busy, press New code' : e.type)); logR('remote error '+e.type); });
+      peer.on('disconnected', () => { if (on) { chip('wait', 'Website · reconnecting'); try { peer.reconnect(); } catch(e){} } });
       peer.on('connection', c => {
         if (conn){ try { conn.close(); } catch(e){} }
         conn = c;
         c.on('open', async () => {
-          chip('on', 'Remote · viewer connected'); sysMsg('Someone opened the BKR website.', 2500);
+          chip('on', 'Website · viewer connected'); sysMsg('Someone opened the BKR website.', 2500);
           push(); startCall();
         });
         c.on('data', onData);
-        c.on('close', () => { if (conn === c){ conn = null; stopDrive(); chip('wait', 'Remote · code '+S.room+' · waiting'); try { call && call.close(); } catch(e){} call = null; } });
+        c.on('close', () => { if (conn === c){ conn = null; stopDrive(); chip('wait', 'Website · code '+S.room); try { call && call.close(); } catch(e){} call = null; } });
       });
       clearInterval(statusTimer); statusTimer = setInterval(push, 1000);
       clearInterval(guard); guard = setInterval(() => { if (driving && performance.now() - lastDrive > 500) stopDrive(); }, 100);
@@ -782,7 +1022,7 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
       try { const st = await Cam.start(); try { call && call.close(); } catch(e){} call = peer.call(conn.peer, st); }
       catch(e){ send({ t:'event', text:'Camera error: '+e.message }); }
     }
-    function disable(){ on = false; stopDrive(); clearInterval(statusTimer); clearInterval(guard); try { conn && conn.close(); } catch(e){} try { peer && peer.destroy(); } catch(e){} peer = conn = call = null; if (!S.track) Cam.stop(); chip('off',''); }
+    function disable(){ on = false; $('camv').classList.remove('show'); stopDrive(); clearInterval(statusTimer); clearInterval(guard); try { conn && conn.close(); } catch(e){} try { peer && peer.destroy(); } catch(e){} peer = conn = call = null; if (!S.track) Cam.stop(); chip('off','Camera · tap to share'); }
     function send(o){ try { if (conn && conn.open) conn.send(o); } catch(e){} }
     function event(text){ send({ t:'event', text }); }
     let battery = null; try { navigator.getBattery && navigator.getBattery().then(b => battery = b); } catch(e){}
@@ -836,10 +1076,11 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
   $('micBtn').onclick = () => {
     if (Ears.active){ Ears.stopAll(); setMode('idle'); setMood('neutral'); cap.innerHTML=''; Ears.resumeWake(); return; }
     if (Brain.busy){ Voice.stop(); return; }
-    wake(); Ears.listenOnce();
+    wake(); Ears.listenOnce(S.hear);
   };
-  function updLangChip(){ $('langChip').textContent = S.hear === 'ar-EG' ? 'عربي' : 'EN'; }
+  function updLangChip(){ $('langChip').textContent = S.hear === 'ar-EG' ? '🎤 عربي' : '🎤 English'; }
   $('langChip').onclick = () => { S.hear = S.hear === 'ar-EG' ? 'en-US' : 'ar-EG'; $('hear').value = S.hear; saveS(); updLangChip(); sysMsg(S.hear==='ar-EG' ? 'هسمعك بالعربي.' : 'I will listen in English.', 1800); };
+  $('remChip').onclick = () => { S.remOn = !Remote.on; saveS(); $('remOn').checked = S.remOn; if (S.remOn){ Remote.enable(); sysMsg('Camera shared. On the website type the code '+S.room+' and press Connect.', 7000); } else Remote.disable(); };
   const toggleBle = () => Body.state === 'off' ? Body.connect() : Body.disconnect();
   $('bleChip').onclick = toggleBle; $('connectBtn').onclick = toggleBle;
 
@@ -868,6 +1109,15 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
     out.textContent = 'Round trip phone → ESP32 → phone, n = '+v.length+' (lost '+lost+')\nmean '+mean.toFixed(1)+' ms · SD '+sd.toFixed(1)+' ms\nmin '+sorted[0].toFixed(1)+' · median '+sorted[Math.floor(v.length/2)].toFixed(1)+' · max '+sorted[v.length-1].toFixed(1)+' ms\nOne-way command latency ≈ mean / 2 = '+(mean/2).toFixed(1)+' ms';
     logR('latency test: mean '+mean.toFixed(1)+' ms SD '+sd.toFixed(1)+' n='+v.length);
   };
+  document.querySelectorAll('[data-say]').forEach(b => b.onclick = () => { closeSheets(); Brain.handle(b.dataset.say, 'test'); });
+  $('prepVoice').onclick = async () => {
+    readForm(); saveS(); const out = $('prepOut');
+    try {
+      out.textContent = 'Saving the robot voice for built-in sentences… keep this screen open.';
+      const n = await Voice.prepare(Brain.offlineTexts(), (d, total, msg) => { out.textContent = (msg ? msg+' ' : '') + d + ' / ' + total; });
+      out.textContent = 'Done: '+n+' new sentences saved. Built-in answers now use the same robot voice without internet.';
+    } catch(e){ out.textContent = 'Stopped: '+e.message.slice(0,160); }
+  };
   $('tLog').onclick = () => { $('testOut').textContent = robotLog.slice(-40).join('\n') || 'No robot messages yet.'; };
 
   $('saveBtn').onclick = () => {
@@ -892,11 +1142,11 @@ video#camv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;lef
   function go(){
     start.remove();
     try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){}
-    try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
-    try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(()=>{}); } catch(e){}
+    (async () => { try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) await document.documentElement.requestFullscreen(); } catch(e){}
+      try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch(e){} })();
     try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){}
     setMood('surprised', 900); chirp('wake'); bounce = 1;
-    const hi = S.hear === 'ar-EG' ? 'أهلًا! أنا بكر. دوس على الميكروفون وكلمني.' : "Hi! I'm BKR. Tap the mic and talk to me.";
+    const hi = S.hear === 'ar-EG' ? 'أهلًا! أنا بكر. قول بكر وكلمني.' : "Hi! I'm BKR. Say Listen and talk to me.";
     setTimeout(async ()=>{ setMode('speaking'); say(null, hi); await Voice.speak(hi); setMode('idle'); capTimer = setTimeout(()=>{ if(mode==='idle') cap.innerHTML=''; }, 2500); Ears.resumeWake(); }, 700);
     if (S.remOn) Remote.enable();
     Cam.ensureForTracking();
